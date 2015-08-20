@@ -1,7 +1,6 @@
 #!/bin/bash
 if [ -z "$FLEXPATH" ]; then
-  echo "Usage FLEXPATH=/path/to/flex/sdk sh ./build.sh"
-  exit
+  FLEXPATH=sdks/apache-flex-sdk-4.14.1-bin
 fi
 
 OPT_DEBUG="-use-network=false \
