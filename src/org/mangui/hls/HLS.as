@@ -18,13 +18,14 @@
     import org.mangui.hls.controller.AudioTrackController;
     import org.mangui.hls.loader.FragmentLoader;
     import org.mangui.hls.stream.HLSNetStream;
+    import flash.external.ExternalInterface;
 
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
     }
     /** Class that manages the streaming process. **/
     public class HLS extends EventDispatcher {
-        private var _fragmentLoader : FragmentLoader;
+        public var _fragmentLoader : FragmentLoader;
         private var _manifestLoader : ManifestLoader;
         private var _audioTrackController : AudioTrackController;
         /** HLS NetStream **/
@@ -33,9 +34,74 @@
         private var _hlsURLStream : Class;
         private var _client : Object = {};
         private var _stage : Stage;
+	private var _url:String;
+	public static var hola_api_inited:Boolean;
+	public static var g_curr_id:Number = 0;
+	public static var g_curr_hls:HLS;
+
+	private static function hola_version() : Object
+	{
+	    return {
+		flashls_version: '0.3.5',
+		patch_version: '1.0.5'
+	    };
+	}
+	private static function hola_hls_get_video_url() : String {
+	    return g_curr_hls._url;
+	}
+	
+	private static function hola_hls_get_position() : Number {
+	    return g_curr_hls.position;
+	}
+
+	private static function hola_hls_get_duration() : Number {
+	    return g_curr_hls.duration;
+	}
+	
+	private static function hola_hls_get_buffer_sec() : Number {
+	    return g_curr_hls.bufferLength;
+	}
+
+	private static function hola_hls_call(method:String, args:Array):Object{
+	    return g_curr_hls[method].apply(g_curr_hls, args);
+	}
+
+	private static function hola_hls_get_state() : String {
+	    return g_curr_hls.playbackState;
+	}
+	
+	private static function hola_hls_get_levels() : Object {
+	    return g_curr_hls.levels
+	}
+
+	private static function hola_hls_get_level() : Number {
+	    return g_curr_hls.level
+	}
 
         /** Create and connect all components. **/
         public function HLS() {
+	    if (!hola_api_inited && ExternalInterface.available)
+	    {
+	        ExternalInterface.call('console.log', 'HLS hola_api_inited');
+		hola_api_inited = true;
+		ExternalInterface.addCallback("hola_hls_call", HLS.hola_hls_call);
+		ExternalInterface.addCallback("hola_version", HLS.hola_version);
+		ExternalInterface.addCallback("hola_hls_get_video_url", HLS.hola_hls_get_video_url);
+		ExternalInterface.addCallback("hola_hls_get_position", HLS.hola_hls_get_position);
+		ExternalInterface.addCallback("hola_hls_get_duration", HLS.hola_hls_get_duration);
+		ExternalInterface.addCallback("hola_hls_get_buffer_sec", HLS.hola_hls_get_buffer_sec);
+		ExternalInterface.addCallback("hola_hls_get_state", HLS.hola_hls_get_state);
+		ExternalInterface.addCallback("hola_hls_get_levels", HLS.hola_hls_get_levels);
+		ExternalInterface.addCallback("hola_hls_get_level", HLS.hola_hls_get_level);
+	    }
+	    g_curr_id++;
+	    g_curr_hls = this;
+	    if (ExternalInterface.available)
+	    {
+		    ExternalInterface.call('console.log', 'HLS new ', g_curr_id);
+		    ExternalInterface.call('window.postMessage',
+			{id: 'flashls.hlsNew', hls_id: g_curr_id}, '*');
+	    }
             var connection : NetConnection = new NetConnection();
             connection.connect(null);
             _manifestLoader = new ManifestLoader(this);
@@ -44,7 +110,46 @@
             // default loader
             _fragmentLoader = new FragmentLoader(this, _audioTrackController);
             _hlsNetStream = new HLSNetStream(connection, this, _fragmentLoader);
+
+	    add_event(HLSEvent.MANIFEST_LOADING);
+	    add_event(HLSEvent.MANIFEST_PARSED);
+	    add_event(HLSEvent.MANIFEST_LOADED);
+	    add_event(HLSEvent.LEVEL_LOADING);
+	    add_event(HLSEvent.LEVEL_LOADED);
+	    add_event(HLSEvent.LEVEL_SWITCH);
+	    add_event(HLSEvent.LEVEL_ENDLIST);
+	    add_event(HLSEvent.FRAGMENT_LOADING);
+	    add_event(HLSEvent.FRAGMENT_LOADED);
+	    add_event(HLSEvent.FRAGMENT_PLAYING);
+	    add_event(HLSEvent.AUDIO_TRACKS_LIST_CHANGE);
+	    add_event(HLSEvent.AUDIO_TRACK_CHANGE);
+	    add_event(HLSEvent.TAGS_LOADED);
+	    add_event(HLSEvent.LAST_VOD_FRAGMENT_LOADED);
+	    add_event(HLSEvent.ERROR);
+	    add_event(HLSEvent.MEDIA_TIME);
+	    add_event(HLSEvent.PLAYBACK_STATE);
+	    add_event(HLSEvent.SEEK_STATE);
+	    add_event(HLSEvent.PLAYBACK_COMPLETE);
+	    add_event(HLSEvent.PLAYLIST_DURATION_UPDATED);
+	    add_event(HLSEvent.ID3_UPDATED);
         };
+
+	private function add_event(name:String):void{
+	    this.addEventListener(name, event_handler_func('flashls.'+name));
+	}
+	private function event_handler_func(name:String):Function{
+	    return function(event:HLSEvent):void{
+	        if (!ExternalInterface.available)
+	            return;
+	        ExternalInterface.call('window.postMessage',
+		    {id: name, hls_id: g_curr_id, url: event.url,
+		    level: event.level, duration: event.duration,
+		    levels: event.levels, error: event.error,
+		    loadMetrics: event.loadMetrics,
+		    playMetrics: event.playMetrics, mediatime: event.mediatime,
+		    state: event.state, audioTrack: event.audioTrack}, '*');
+	    }
+	}
 
         /** Forward internal errors. **/
         override public function dispatchEvent(event : Event) : Boolean {
@@ -58,6 +163,11 @@
         };
 
         public function dispose() : void {
+	    if (ExternalInterface.available)
+	    {
+		    ExternalInterface.call('window.postMessage',
+			{id: 'flashls.hlsDispose', hls_id: g_curr_id}, '*');
+	    }
             _fragmentLoader.dispose();
             _manifestLoader.dispose();
             _audioTrackController.dispose();
@@ -110,6 +220,14 @@
         public function get position() : Number {
             return _hlsNetStream.position;
         };
+        
+        public function get video_url() : String {
+            return _url;
+        };
+        
+	public function get duration() : Number {
+            return _hlsNetStream.duration;
+        };
 
         /** Return the current playback state. **/
         public function get playbackState() : String {
@@ -129,6 +247,7 @@
         /** Load and parse a new HLS URL **/
         public function load(url : String) : void {
             _hlsNetStream.close();
+	    _url = url;
             _manifestLoader.load(url);
         };
 

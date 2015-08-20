@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package org.mangui.hls.model {
+    import org.mangui.hls.loader.FragmentLoader;
     /** Fragment Metrics. **/
     public class FragmentMetrics {
         /** fragment loading request/start/end time **/
@@ -30,6 +31,8 @@ package org.mangui.hls.model {
         }
 
         public function get bandwidth() : int {
+            if (FragmentLoader.g_hls_mode && FragmentLoader.g_bandwidth)
+                    return FragmentLoader.g_bandwidth;
             return(Math.round(size * 8000 / (parsing_end_time - loading_request_time)));
         }
     }

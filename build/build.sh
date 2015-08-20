@@ -28,6 +28,7 @@ echo "Compiling bin/debug/flashls.swc"
 $FLEXPATH/bin/compc \
     $OPT_DEBUG_10_1 \
     -include-sources ../src/org/mangui/hls \
+    -include-sources ../src/org/hola \
     -output ../bin/debug/flashls.swc \
     -target-player="10.1"
 
@@ -35,6 +36,7 @@ echo "Compiling bin/release/flashls.swc"
 $FLEXPATH/bin/compc \
     $OPT_RELEASE_10_1 \
     -include-sources ../src/org/mangui/hls \
+    -include-sources ../src/org/hola \
     -output ../bin/release/flashls.swc \
     -target-player="10.1"
 

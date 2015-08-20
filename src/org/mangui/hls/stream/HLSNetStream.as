@@ -270,6 +270,10 @@
             return _playback_current_position;
         };
 
+	public function get duration() : Number {
+            return _playlist_duration;
+        };
+
         /** Return the current playback state. **/
         public function get playbackState() : String {
             return _playbackState;

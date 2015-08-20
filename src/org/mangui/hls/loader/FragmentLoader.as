@@ -21,12 +21,15 @@
     import org.mangui.hls.model.Level;
     import org.mangui.hls.utils.AES;
     import org.mangui.hls.utils.PTS;
+    import org.hola.JSURLStream;
 
     import flash.events.*;
     import flash.net.*;
     import flash.utils.ByteArray;
     import flash.utils.Timer;
-
+    import flash.utils.setTimeout;
+    import flash.external.ExternalInterface;
+    
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
         import org.mangui.hls.utils.Hex;
@@ -54,7 +57,7 @@
         /** Reference to the manifest levels. **/
         private var _levels : Vector.<Level>;
         /** Util for loading the fragment. **/
-        private var _fragstreamloader : URLStream;
+        private var _fragstreamloader : JSURLStream;
         /** Util for loading the key. **/
         private var _keystreamloader : URLStream;
         /** key map **/
@@ -97,8 +100,42 @@
         private static const LOADING_FRAGMENT_IO_ERROR : int = 4;
         private static const LOADING_KEY_IO_ERROR : int = 5;
 
+        public static var hola_api_inited:Boolean;
+        public static var g_req_id:Number = 0;
+        public static var g_req:Object = {};
+        public static var g_hls_mode:Boolean = false;
+        public static var g_bandwidth:Number = 0;
+        public var req_id:String;
+        public var req_url:String;
+        public var hls_mode:Boolean = false;
+        public var _savedBytes:ByteArray;
+
+        public static function hola_set_hls_mode(on:Boolean):Boolean {
+                g_hls_mode = on;
+                return on;
+        }
+        private static function timerHandler():void {
+            ExternalInterface.call('window.hola_jwplayer_timer');
+        }
+        private static function hola_set_timeout(ms:Number) : void
+        {
+                setTimeout(timerHandler, ms);
+        }
+        private static function hola_hls_set_bandwidth(bandwidth:Number) : void
+        {
+            g_bandwidth = bandwidth;
+        }
         /** Create the loader. **/
         public function FragmentLoader(hls : HLS, audioTrackController : AudioTrackController) : void {
+	    if (!hola_api_inited && ExternalInterface.available)
+	    {
+                ExternalInterface.call('console.log', 'FragmentLoader hola_api_inited');
+		hola_api_inited = true;
+                ExternalInterface.addCallback("hola_set_hls_mode",
+                        FragmentLoader.hola_set_hls_mode); 
+		ExternalInterface.addCallback("hola_set_timeout", FragmentLoader.hola_set_timeout);
+		ExternalInterface.addCallback("hola_hls_set_bandwidth", FragmentLoader.hola_hls_set_bandwidth);
+	     }
             _hls = hls;
             _autoLevelManager = new AutoLevelController(hls);
             _audioTrackController = audioTrackController;
@@ -691,7 +728,7 @@
                     return;
                 }
                 var urlStreamClass : Class = _hls.URLstream as Class;
-                _fragstreamloader = (new urlStreamClass()) as URLStream;
+                _fragstreamloader = new JSURLStream;
                 _fragstreamloader.addEventListener(IOErrorEvent.IO_ERROR, _fragLoadErrorHandler);
                 _fragstreamloader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _fragLoadErrorHandler);
                 _fragstreamloader.addEventListener(ProgressEvent.PROGRESS, _fragLoadProgressHandler);
@@ -877,6 +914,8 @@
                     _tags_callback(_level, _frag_current.continuity, _frag_current.seqnum, !fragData.video_found, fragData.video_width, fragData.video_height, _frag_current.tag_list, fragData.tags, fragData.tag_pts_min, fragData.tag_pts_max, _hasDiscontinuity, min_offset, _frag_current.program_date + fragData.tag_pts_start_offset);
                     var processing_duration : Number = (getTimer() - _frag_current.metrics.loading_request_time);
                     var bandwidth : Number = Math.round(fragData.bytesLoaded * 8000 / processing_duration);
+                    if (hls_mode && g_bandwidth)
+                        bandwidth = g_bandwidth;
                     var tagsMetrics : HLSLoadMetrics = new HLSLoadMetrics(_level, bandwidth, fragData.tag_pts_end_offset, processing_duration);
                     _hls.dispatchEvent(new HLSEvent(HLSEvent.TAGS_LOADED, tagsMetrics));
                     _hasDiscontinuity = false;
