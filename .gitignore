@@ -1,4 +1,2 @@
-*.swf.cache
-*.swc.cache
-.metadata
-.settings
+*.swp
+*.tmp.xml
