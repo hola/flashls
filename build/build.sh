@@ -7,10 +7,12 @@ cd $(dirname $(realpath $0))
 
 OPT_DEBUG="-use-network=false \
     -optimize=true \
+    -define=CONFIG::HAVE_WORKER,true \
     -define=CONFIG::LOGGING,true"
 
 OPT_RELEASE="-use-network=false \
     -optimize=true \
+    -define=CONFIG::HAVE_WORKER,true \
     -define=CONFIG::LOGGING,false"
 
 echo "Compiling bin/debug/flashls.swc"
