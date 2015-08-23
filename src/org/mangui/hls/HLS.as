@@ -18,6 +18,7 @@ package org.mangui.hls {
     import org.mangui.hls.controller.AudioTrackController;
     import org.mangui.hls.loader.FragmentLoader;
     import org.mangui.hls.stream.HLSNetStream;
+    import org.hola.WorkerUtils;
     import flash.external.ExternalInterface;
 
     CONFIG::LOGGING {
@@ -80,6 +81,7 @@ package org.mangui.hls {
 
         /** Create and connect all components. **/
         public function HLS() {
+            WorkerUtils.start_worker();
             if (!hola_api_inited && ExternalInterface.available)
             {
                 ExternalInterface.call('console.log', 'HLS hola_api_inited');
