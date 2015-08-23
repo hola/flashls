@@ -9,14 +9,14 @@ OPT_DEBUG="-use-network=false \
     -optimize=true \
     -define=CONFIG::DEBUG,true \
     -define=CONFIG::RELEASE,false \
-    -define=CONFIG::HAVE_WORKER,true \
+    -define=CONFIG::HAVE_WORKER,false \
     -define=CONFIG::LOGGING,true"
 
 OPT_RELEASE="-use-network=false \
     -optimize=true \
     -define=CONFIG::DEBUG,false \
     -define=CONFIG::RELEASE,true \
-    -define=CONFIG::HAVE_WORKER,true \
+    -define=CONFIG::HAVE_WORKER,false \
     -define=CONFIG::LOGGING,false"
 
 echo "Compiling bin/debug/HLSWorker.swf"
