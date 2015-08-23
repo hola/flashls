@@ -101,14 +101,9 @@
         private static const LOADING_KEY_IO_ERROR : int = 5;
 
         public static var hola_api_inited:Boolean;
-        public static var g_req_id:Number = 0;
-        public static var g_req:Object = {};
         public static var g_hls_mode:Boolean = false;
         public static var g_bandwidth:Number = 0;
-        public var req_id:String;
-        public var req_url:String;
         public var hls_mode:Boolean = false;
-        public var _savedBytes:ByteArray;
 
         public static function hola_set_hls_mode(on:Boolean):Boolean {
                 g_hls_mode = on;
