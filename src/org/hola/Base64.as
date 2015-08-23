@@ -1,74 +1,69 @@
 package org.hola
 {
-   import flash.utils.ByteArray;
-   
-   public class Base64 extends Object
-   {
-      
-      private static const _decodeChars:Vector.<int> = InitDecodeChar();
-      
-      public function Base64()
-      {
-         super();
-      }
-      
-      public static function decode(param1:String) : ByteArray
-      {
-         var _loc2_:* = 0;
-         var _loc3_:* = 0;
-         var _loc4_:* = 0;
-         var _loc5_:* = 0;
-         var _loc6_:* = 0;
-         var _loc7_:int = param1.length;
-         var _loc8_:ByteArray = new ByteArray();
-         _loc8_.writeUTFBytes(param1);
-         var _loc9_:* = 0;
-         while(_loc6_ < _loc7_)
-         {
-            _loc2_ = _decodeChars[int(_loc8_[_loc6_++])];
-            if(_loc2_ == -1)
+    import flash.utils.ByteArray;
+
+    public class Base64 extends Object
+    {
+        private static const _decodeChars:Vector.<int> = InitDecodeChar();
+
+        public static function decode(str : String) : ByteArray {
+            var c1 : int;
+            var c2 : int;
+            var c3 : int;
+            var c4 : int;
+            var i : int = 0;
+            var len : int = str.length;
+            var arr : ByteArray = new ByteArray();
+            arr.length = len/4*3;
+            var pos : int = 0;
+            while (i<len)
             {
-               break;
+                c1 = _decodeChars[int(str.charCodeAt(i++))];
+                if (c1 == -1)
+                    break;
+                c2 = _decodeChars[int(str.charCodeAt(i++))];
+                if (c2 == -1)
+                    break;
+                arr[int(pos++)] = (c1 << 2) | ((c2 & 0x30) >> 4);
+                c3 = int(str.charCodeAt(i++));
+                if (c3 == 61)
+                    break;
+                c3 = _decodeChars[int(c3)];
+                if (c3 == -1)
+                    break;
+                arr[int(pos++)] = ((c2 & 0x0f) << 4) | ((c3 & 0x3c) >> 2);
+                c4 = int(str.charCodeAt(i++));
+                if (c4 == 61)
+                    break;
+                c4 = _decodeChars[int(c4)];
+                if (c4 == -1)
+                    break;
+                arr[int(pos++)] = ((c3 & 0x03) << 6) | c4;
             }
-            _loc3_ = _decodeChars[int(_loc8_[_loc6_++])];
-            if(_loc3_ == -1)
-            {
-               break;
-            }
-            _loc8_[int(_loc9_++)] = _loc2_ << 2 | (_loc3_ & 48) >> 4;
-            _loc4_ = _loc8_[int(_loc6_++)];
-            if(_loc4_ == 61)
-            {
-               _loc8_.length = _loc9_;
-               return _loc8_;
-            }
-            _loc4_ = _decodeChars[int(_loc4_)];
-            if(_loc4_ == -1)
-            {
-               break;
-            }
-            _loc8_[int(_loc9_++)] = (_loc3_ & 15) << 4 | (_loc4_ & 60) >> 2;
-            _loc5_ = _loc8_[int(_loc6_++)];
-            if(_loc5_ == 61)
-            {
-               _loc8_.length = _loc9_;
-               return _loc8_;
-            }
-            _loc5_ = _decodeChars[int(_loc5_)];
-            if(_loc5_ == -1)
-            {
-               break;
-            }
-            _loc8_[int(_loc9_++)] = (_loc4_ & 3) << 6 | _loc5_;
-         }
-         _loc8_.length = _loc9_;
-         return _loc8_;
-      }
-      
-      public static function InitDecodeChar() : Vector.<int>
-      {
-         var _loc1_:Vector.<int> = new <int>[-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,62,-1,-1,-1,63,52,53,54,55,56,57,58,59,60,61,-1,-1,-1,-1,-1,-1,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,-1,-1,-1,-1,-1,-1,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1];
-         return _loc1_;
-      }
-   }
+            arr.length = pos;
+            return arr;
+        }
+
+        public static function InitDecodeChar() : Vector.<int>
+        {
+            var decodeChars : Vector.<int> = new <int>[
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,
+                52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
+                -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+                15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,
+                -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+                41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+                -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
+            return decodeChars;
+        }
+    }
 }
