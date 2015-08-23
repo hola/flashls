@@ -19,8 +19,6 @@ package org.hola {
         private var _connected : Boolean;
         private var _resource : ByteArray = new ByteArray();
         public var holaManaged:Boolean = false;
-        public static var instanceCount:Number = 0;
-        public var instanceId:Number;
         public static var jsApiInited:Boolean = false;
         public static var reqCount:Number = 0;
         public var req_id:String;
@@ -28,8 +26,6 @@ package org.hola {
 
         public function JSURLStream(){
             holaManaged = FragmentLoader.g_hls_mode;
-            instanceId = instanceCount;
-            instanceCount++;
             addEventListener(Event.OPEN, onOpen);
             ExternalInterface.marshallExceptions = true;
             super();
