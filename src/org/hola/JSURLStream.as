@@ -13,11 +13,14 @@ package org.hola {
     import flash.utils.Timer;
     import org.hola.ZErr;
     import org.hola.Base64;
+    import org.hola.WorkerUtils;
+    import org.hola.HEvent;
     import org.mangui.hls.loader.FragmentLoader;
 
     public dynamic class JSURLStream extends URLStream {
         private var _connected : Boolean;
         private var _resource : ByteArray = new ByteArray();
+        private var _curr_data : Object;
         public var holaManaged:Boolean = false;
         public static var jsApiInited:Boolean = false;
         public static var reqCount:Number = 0;
@@ -29,7 +32,6 @@ package org.hola {
             addEventListener(Event.OPEN, onOpen);
             ExternalInterface.marshallExceptions = true;
             super();
-
             // Connect calls to JS.
             if (ExternalInterface.available && !jsApiInited){
                 ZErr.log('JSURLStream init api');
@@ -73,15 +75,21 @@ package org.hola {
             return _resource.readUnsignedShort();
         }
 
-        override public function readBytes(bytes : ByteArray, offset : uint = 0, length : uint = 0) : void {
+        override public function readBytes(bytes : ByteArray,
+            offset : uint = 0, length : uint = 0) : void
+        {
             if (!holaManaged)
                 return super.readBytes(bytes, offset, length);
             _resource.readBytes(bytes, offset, length);
         }
 
         override public function close() : void {
-            if (holaManaged && reqs[req_id])
-                _trigger('abortFragment', {req_id: req_id});
+            if (holaManaged)
+            {
+                if (reqs[req_id])
+                    _trigger('abortFragment', {req_id: req_id});
+                WorkerUtils.removeEventListener(HEvent.WORKER_MESSAGE, onmsg);
+            }
             if (super.connected)
                 super.close();
             _connected = false;
@@ -92,8 +100,10 @@ package org.hola {
             holaManaged = FragmentLoader.g_hls_mode;
             reqCount++;
             req_id = 'req'+reqCount;
+            ZErr.log("load "+req_id);
             if (!holaManaged)
                 return super.load(request);
+            WorkerUtils.addEventListener(HEvent.WORKER_MESSAGE, onmsg);
             reqs[req_id] = this;
             _resource = new ByteArray();
             _trigger('requestFragment', {url: request.url, req_id: req_id});
@@ -102,46 +112,67 @@ package org.hola {
 
         private function onOpen(event : Event) : void { _connected = true; }
 
+        private function decode(str : String) : void {
+            var data : ByteArray;
+            if (!WorkerUtils.worker)
+            {
+                if (str)
+                    data = Base64.decode_str(str);
+                return on_decoded_data(data);
+            }
+            data = new ByteArray();
+            data.shareable = true;
+            data.writeUTFBytes(str);
+            WorkerUtils.send({cmd: "b64.decode", id: req_id});
+            WorkerUtils.send(data);
+        }
+
+        private function onmsg(e : HEvent) : void {
+            var msg : Object = e.data;
+            if (!req_id || req_id!=msg.id || msg.cmd!="b64.decode")
+                return;
+            var data : ByteArray = WorkerUtils.recv();
+            on_decoded_data(data);
+        }
+
+        private function on_decoded_data(data : ByteArray) : void {
+            if (data)
+            {
+                data.position = 0;
+                if (_resource)
+                {
+                    var prev:uint = _resource.position;
+                    data.readBytes(_resource, _resource.length);
+                    _resource.position = prev;
+                }
+                else
+                    _resource = data;
+                // XXX arik: get finalLength from js
+                var finalLength:uint = _resource.length;
+                dispatchEvent(new ProgressEvent( ProgressEvent.PROGRESS, false,
+                    false, _resource.length, finalLength));
+            }
+            // XXX arik: dispatch httpStatus/httpResponseStatus
+            if (_curr_data.status)
+                resourceLoadingSuccess();
+        }
+
+        private function on_fragment_data(o : Object) : void {
+            _curr_data = o;
+            if (o.error)
+                return resourceLoadingError();
+            decode(o.data);
+        }
+
         protected static function hola_onFragmentData(o:Object):void{
             var stream:JSURLStream;
             try {
-                stream = reqs[o.req_id];
-                if (!stream)
+                if (!(stream = reqs[o.req_id]))
                     throw new Error('req_id not found '+o.req_id);
-                if (o.error)
-                {
-                    delete reqs[o.req_id];
-                    return stream.resourceLoadingError();
-                }
-                if (o.data)
-                {
-                    var data:ByteArray = Base64.decode_str(o.data);
-                    data.position = 0;
-                    if (stream._resource)
-                    {
-                        var prev:uint = stream._resource.position;
-                        data.readBytes(stream._resource,
-                            stream._resource.length);
-                        stream._resource.position = prev;
-                    }
-                    else
-                        stream._resource = data;
-                    // XXX arik: get finalLength from js
-                    var finalLength:uint = stream._resource.length;
-                    stream.dispatchEvent(new ProgressEvent(
-                        ProgressEvent.PROGRESS, false, false,
-                        stream._resource.length, finalLength));
-                }
-                if (o.status)
-                {
-                    delete reqs[o.req_id];
-                    // XXX arik: dispatch httpStatus/httpResponseStatus
-                    stream.resourceLoadingSuccess();
-                }
+                stream.on_fragment_data(o);
             } catch(err:Error){
                 ZErr.log('Error in hola_onFragmentData', ''+err,
                     ''+err.getStackTrace());
-                delete reqs[o.req_id];
                 if (stream)
                     stream.resourceLoadingError();
                 throw err;
@@ -149,11 +180,13 @@ package org.hola {
         }
 
         protected function resourceLoadingError() : void {
-            this.dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
+            delete reqs[req_id];
+            dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
         }
 
         protected function resourceLoadingSuccess() : void {
-            this.dispatchEvent(new Event(Event.COMPLETE));
+            delete reqs[req_id];
+            dispatchEvent(new Event(Event.COMPLETE));
         }
     }
 }
