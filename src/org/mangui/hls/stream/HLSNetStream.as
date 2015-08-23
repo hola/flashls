@@ -219,11 +219,9 @@
                     let's flush netstream now
                     this is to avoid black screen during seek command */
                     super.close();
-                    CONFIG::FLASH_11_1 {
-                        try {
-                            super.useHardwareDecoder = HLSSettings.useHardwareVideoDecoder;
-                        } catch(e : Error) {
-                        }
+                    try {
+                        super.useHardwareDecoder = HLSSettings.useHardwareVideoDecoder;
+                    } catch(e : Error) {
                     }
                     super.play(null);
                     super.appendBytesAction(NetStreamAppendBytesAction.RESET_SEEK);
