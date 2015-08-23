@@ -115,13 +115,13 @@ package org.hola {
                 }
                 if (o.data)
                 {
-                      var data:ByteArray = Base64.decode_str(o.data);
-                      data.position = 0;
-                      stream._resource = stream._resource || new ByteArray();
-                      var prev:Number = stream._resource.position;
-                      data.readBytes(stream._resource,
-                          stream._resource.length);
-                      stream._resource.position = prev;
+                    var data:ByteArray = Base64.decode_str(o.data);
+                    data.position = 0;
+                    stream._resource = stream._resource || new ByteArray();
+                    var prev:Number = stream._resource.position;
+                    data.readBytes(stream._resource,
+                        stream._resource.length);
+                    stream._resource.position = prev;
                 }
                 if (o.status)
                 {
@@ -152,7 +152,7 @@ package org.hola {
         }
 
         protected function resourceLoadingSuccess() : void {
-	     this.dispatchEvent(new Event(Event.COMPLETE));
+            this.dispatchEvent(new Event(Event.COMPLETE));
         }
     }
 }
