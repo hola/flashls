@@ -117,25 +117,26 @@ package org.hola {
                 {
                     var data:ByteArray = Base64.decode_str(o.data);
                     data.position = 0;
-                    stream._resource = stream._resource || new ByteArray();
-                    var prev:Number = stream._resource.position;
-                    data.readBytes(stream._resource,
-                        stream._resource.length);
-                    stream._resource.position = prev;
+                    if (stream._resource)
+                    {
+                        var prev:uint = stream._resource.position;
+                        data.readBytes(stream._resource,
+                            stream._resource.length);
+                        stream._resource.position = prev;
+                    }
+                    else
+                        stream._resource = data;
+                    // XXX arik: get finalLength from js
+                    var finalLength:uint = stream._resource.length;
+                    stream.dispatchEvent(new ProgressEvent(
+                        ProgressEvent.PROGRESS, false, false,
+                        stream._resource.length, finalLength));
                 }
                 if (o.status)
                 {
                     delete reqs[o.req_id];
                     // XXX arik: dispatch httpStatus/httpResponseStatus
                     stream.resourceLoadingSuccess();
-                }
-                else
-                {
-                    // XXX arik: get finalLength from js
-                    var finalLength:Number = stream._resource.length;
-                    stream.dispatchEvent(new ProgressEvent(
-                        ProgressEvent.PROGRESS, false, false,
-                        stream._resource.length, finalLength));
                 }
             } catch(err:Error){
                 ZErr.log('Error in hola_onFragmentData', ''+err,
