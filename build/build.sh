@@ -15,6 +15,26 @@ OPT_RELEASE="-use-network=false \
     -define=CONFIG::HAVE_WORKER,true \
     -define=CONFIG::LOGGING,false"
 
+echo "Compiling bin/debug/HLSWorker.swf"
+$FLEXPATH/bin/mxmlc ../src/org/mangui/hls/HLSWorker.as \
+    -source-path ../src \
+    -o ../bin/debug/HLSWorker.swf \
+    $OPT_DEBUG \
+    -target-player="11.5" \
+    -default-size 480 270 \
+    -default-background-color=0x000000
+./add-opt-in.py ../bin/debug/HLSWorker.swf
+
+echo "Compiling bin/release/HLSWorker.swf"
+$FLEXPATH/bin/mxmlc ../src/org/mangui/hls/HLSWorker.as \
+    -source-path ../src \
+    -o ../bin/release/HLSWorker.swf \
+    $OPT_RELEASE \
+    -target-player="11.5" \
+    -default-size 480 270 \
+    -default-background-color=0x000000
+./add-opt-in.py ../bin/release/HLSWorker.swf
+
 echo "Compiling bin/debug/flashls.swc"
 $FLEXPATH/bin/compc \
     $OPT_DEBUG \
