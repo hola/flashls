@@ -3,6 +3,8 @@ if [ -z "$FLEXPATH" ]; then
   FLEXPATH=sdks/apache-flex-sdk-4.14.1-bin
 fi
 
+cd $(dirname $(realpath $0))
+
 OPT_DEBUG="-use-network=false \
     -optimize=true \
     -define=CONFIG::LOGGING,true \
