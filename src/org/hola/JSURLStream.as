@@ -115,7 +115,7 @@ package org.hola {
                 }
                 if (o.data)
                 {
-                      var data:ByteArray = Base64.decode(o.data);
+                      var data:ByteArray = Base64.decode_str(o.data);
                       data.position = 0;
                       stream._resource = stream._resource || new ByteArray();
                       var prev:Number = stream._resource.position;

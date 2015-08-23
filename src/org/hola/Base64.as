@@ -6,7 +6,45 @@ package org.hola
     {
         private static const _decodeChars:Vector.<int> = InitDecodeChar();
 
-        public static function decode(str : String) : ByteArray {
+        public static function decode(arr : ByteArray) : ByteArray {
+            var c1 : int;
+            var c2 : int;
+            var c3 : int;
+            var c4 : int;
+            var i : int = 0;
+            var len : int = arr.length;
+            var pos : int = 0;
+            while (i<len)
+            {
+                c1 = _decodeChars[int(arr[i++])];
+                if (c1 == -1)
+                    break;
+                c2 = _decodeChars[int(arr[i++])];
+                if (c2 == -1)
+                    break;
+                arr[int(pos++)] = (c1 << 2) | ((c2 & 0x30) >> 4);
+                c3 = arr[int(i++)];
+                if (c3 == 61)
+                    break;
+                c3 = _decodeChars[int(c3)];
+                if (c3 == -1)
+                    break;
+                arr[int(pos++)] = ((c2 & 0x0f) << 4) | ((c3 & 0x3c) >> 2);
+                c4 = arr[int(i++)];
+                if (c4 == 61)
+                    break;
+                c4 = _decodeChars[int(c4)];
+                if (c4 == -1)
+                    break;
+                arr[int(pos++)] = ((c3 & 0x03) << 6) | c4;
+            }
+            arr.length = pos;
+            return arr;
+        }
+
+        // intentionally not writing to ByteArray and reusing decode() for
+        // performance
+        public static function decode_str(str : String) : ByteArray {
             var c1 : int;
             var c2 : int;
             var c3 : int;
