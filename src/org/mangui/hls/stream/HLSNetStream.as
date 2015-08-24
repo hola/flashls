@@ -268,7 +268,7 @@
             return _playback_current_position;
         };
 
-	public function get duration() : Number {
+        public function get duration() : Number {
             return _playlist_duration;
         };
 

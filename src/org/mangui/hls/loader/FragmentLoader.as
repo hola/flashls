@@ -106,15 +106,15 @@
         public var hls_mode:Boolean = false;
 
         public static function hola_set_hls_mode(on:Boolean):Boolean {
-                g_hls_mode = on;
-                return on;
+            g_hls_mode = on;
+            return on;
         }
         private static function timerHandler():void {
             ExternalInterface.call('window.hola_jwplayer_timer');
         }
         private static function hola_set_timeout(ms:Number) : void
         {
-                setTimeout(timerHandler, ms);
+            setTimeout(timerHandler, ms);
         }
         private static function hola_hls_set_bandwidth(bandwidth:Number) : void
         {
@@ -122,15 +122,15 @@
         }
         /** Create the loader. **/
         public function FragmentLoader(hls : HLS, audioTrackController : AudioTrackController) : void {
-	    if (!hola_api_inited && ExternalInterface.available)
-	    {
+            if (!hola_api_inited && ExternalInterface.available)
+            {
                 ExternalInterface.call('console.log', 'FragmentLoader hola_api_inited');
-		hola_api_inited = true;
+                hola_api_inited = true;
                 ExternalInterface.addCallback("hola_set_hls_mode",
                         FragmentLoader.hola_set_hls_mode); 
-		ExternalInterface.addCallback("hola_set_timeout", FragmentLoader.hola_set_timeout);
-		ExternalInterface.addCallback("hola_hls_set_bandwidth", FragmentLoader.hola_hls_set_bandwidth);
-	     }
+                ExternalInterface.addCallback("hola_set_timeout", FragmentLoader.hola_set_timeout);
+                ExternalInterface.addCallback("hola_hls_set_bandwidth", FragmentLoader.hola_hls_set_bandwidth);
+             }
             _hls = hls;
             _autoLevelManager = new AutoLevelController(hls);
             _audioTrackController = audioTrackController;
@@ -845,7 +845,7 @@
 
             /* try to do progressive buffering here.
              * only do it in case :
-             * 		first fragment is already loaded
+             *          first fragment is already loaded
              *      if first fragment is not loaded, we can do it if startlevel is already defined (if startFromLevel is set to -1
              *      we first need to download one fragment to check the dl bw, in order to assess start level ...)
              *      in case startFromLevel is to -1 and there is only one level, then we can do progressive buffering
