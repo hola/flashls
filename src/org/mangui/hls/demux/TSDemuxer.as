@@ -75,12 +75,12 @@
 
         public static function probe(data : ByteArray) : Boolean {
             var pos : uint = data.position;
-            var len : uint = Math.min(data.bytesAvailable, 188 * 2);
+            var len : uint = Math.min(data.bytesAvailable, PACKETSIZE * 2);
             for (var i : int = 0; i < len; i++) {
                 if (data.readByte() == SYNCBYTE) {
                     // ensure that at least two consecutive TS start offset are found
-                    if (data.bytesAvailable > 188) {
-                        data.position = pos + i + 188;
+                    if (data.bytesAvailable > PACKETSIZE) {
+                        data.position = pos + i + PACKETSIZE;
                         if (data.readByte() == SYNCBYTE) {
                             data.position = pos + i;
                             return true;
@@ -161,7 +161,7 @@
             var start_time : int = getTimer();
             _data.position = _read_position;
             // dont spend more than 20ms demuxing TS packets to avoid loosing frames
-            while ((_data.bytesAvailable >= 188) && ((getTimer() - start_time) < 20)) {
+            while ((_data.bytesAvailable >= PACKETSIZE) && ((getTimer() - start_time) < 20)) {
                 _parseTSPacket();
             }
             if (_tags.length) {
@@ -171,7 +171,7 @@
             if (_data) {
                 _read_position = _data.position;
                 // finish reading TS fragment
-                if (_data_complete && _data.bytesAvailable < 188) {
+                if (_data_complete && _data.bytesAvailable < PACKETSIZE) {
                     // free ByteArray
                     _data = null;
                     // first check if TS parsing was successful
