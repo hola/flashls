@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
  package org.mangui.hls.demux {
     import org.mangui.hls.model.Level;
-    import org.hola.WorkerUtils;
+    import org.hola.HSettings;
 
     import flash.display.DisplayObject;
     import flash.utils.ByteArray;
@@ -36,7 +36,7 @@
                 CONFIG::LOGGING {
                     Log.debug("TS match + H264 signaled in Manifest, use TS demuxer");
                 }
-                if (WorkerUtils.worker)
+                if (HSettings.use_worker)
                 {
                     return new TSDemuxer2(displayObject, audioselect, progress,
                         complete, videometadata);
@@ -57,7 +57,7 @@
             } else if (mp3_match) {
                 return new MP3Demuxer(audioselect, progress, complete);
             } else if (ts_match) {
-                if (WorkerUtils.worker)
+                if (HSettings.use_worker)
                 {
                     return new TSDemuxer2(displayObject, audioselect, progress,
                         complete, videometadata);

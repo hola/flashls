@@ -15,27 +15,27 @@ package org.hola {
     import org.hola.Base64;
     import org.hola.WorkerUtils;
     import org.hola.HEvent;
-    import org.mangui.hls.loader.FragmentLoader;
+    import org.hola.HSettings;
 
     public dynamic class JSURLStream extends URLStream {
+        private static var js_api_inited : Boolean = false;
+        private static var req_count : Number = 0;
+        private static var reqs : Object = {};
         private var _connected : Boolean;
         private var _resource : ByteArray = new ByteArray();
         private var _curr_data : Object;
-        public var holaManaged:Boolean = false;
-        public static var jsApiInited:Boolean = false;
-        public static var reqCount:Number = 0;
-        public var req_id:String;
-        public static var reqs:Object = {};
+        private var _hola_managed : Boolean = false;
+        private var _req_id : String;
 
         public function JSURLStream(){
-            holaManaged = FragmentLoader.g_hls_mode;
+            _hola_managed = HSettings.enabled;
             addEventListener(Event.OPEN, onOpen);
             ExternalInterface.marshallExceptions = true;
             super();
             // Connect calls to JS.
-            if (ExternalInterface.available && !jsApiInited){
+            if (ExternalInterface.available && !js_api_inited){
                 ZErr.log('JSURLStream init api');
-                jsApiInited = true;
+                js_api_inited = true;
                 ExternalInterface.addCallback('hola_onFragmentData',
                     hola_onFragmentData);
             }
@@ -52,25 +52,25 @@ package org.hola {
         }
 
         override public function get connected() : Boolean {
-            if (!holaManaged)
+            if (!_hola_managed)
                 return super.connected;
             return _connected;
         }
 
         override public function get bytesAvailable() : uint {
-            if (!holaManaged)
+            if (!_hola_managed)
                 return super.bytesAvailable;
             return _resource.bytesAvailable;
         }
 
         override public function readByte() : int {
-            if (!holaManaged)
+            if (!_hola_managed)
                 return super.readByte();
             return _resource.readByte();
         }
 
         override public function readUnsignedShort() : uint {
-            if (!holaManaged)
+            if (!_hola_managed)
                 return super.readUnsignedShort();
             return _resource.readUnsignedShort();
         }
@@ -78,16 +78,16 @@ package org.hola {
         override public function readBytes(bytes : ByteArray,
             offset : uint = 0, length : uint = 0) : void
         {
-            if (!holaManaged)
+            if (!_hola_managed)
                 return super.readBytes(bytes, offset, length);
             _resource.readBytes(bytes, offset, length);
         }
 
         override public function close() : void {
-            if (holaManaged)
+            if (_hola_managed)
             {
-                if (reqs[req_id])
-                    _trigger('abortFragment', {req_id: req_id});
+                if (reqs[_req_id])
+                    _trigger('abortFragment', {req_id: _req_id});
                 WorkerUtils.removeEventListener(HEvent.WORKER_MESSAGE, onmsg);
             }
             if (super.connected)
@@ -97,16 +97,15 @@ package org.hola {
 
         override public function load(request : URLRequest) : void {
             // XXX arik: cleanup previous if hola mode changed
-            holaManaged = FragmentLoader.g_hls_mode;
-            reqCount++;
-            req_id = 'req'+reqCount;
-            ZErr.log("load "+req_id);
-            if (!holaManaged)
+            _hola_managed = HSettings.enabled;
+            req_count++;
+            _req_id = 'req'+req_count;
+            if (!_hola_managed)
                 return super.load(request);
             WorkerUtils.addEventListener(HEvent.WORKER_MESSAGE, onmsg);
-            reqs[req_id] = this;
+            reqs[_req_id] = this;
             _resource = new ByteArray();
-            _trigger('requestFragment', {url: request.url, req_id: req_id});
+            _trigger('requestFragment', {url: request.url, req_id: _req_id});
             this.dispatchEvent(new Event(Event.OPEN));
         }
 
@@ -114,7 +113,7 @@ package org.hola {
 
         private function decode(str : String) : void {
             var data : ByteArray;
-            if (!WorkerUtils.worker)
+            if (!HSettings.use_worker)
             {
                 if (str)
                     data = Base64.decode_str(str);
@@ -123,13 +122,13 @@ package org.hola {
             data = new ByteArray();
             data.shareable = true;
             data.writeUTFBytes(str);
-            WorkerUtils.send({cmd: "b64.decode", id: req_id});
+            WorkerUtils.send({cmd: "b64.decode", id: _req_id});
             WorkerUtils.send(data);
         }
 
         private function onmsg(e : HEvent) : void {
             var msg : Object = e.data;
-            if (!req_id || req_id!=msg.id || msg.cmd!="b64.decode")
+            if (!_req_id || _req_id!=msg.id || msg.cmd!="b64.decode")
                 return;
             var data : ByteArray = WorkerUtils.recv();
             on_decoded_data(data);
@@ -180,12 +179,12 @@ package org.hola {
         }
 
         protected function resourceLoadingError() : void {
-            delete reqs[req_id];
+            delete reqs[_req_id];
             dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
         }
 
         protected function resourceLoadingSuccess() : void {
-            delete reqs[req_id];
+            delete reqs[_req_id];
             dispatchEvent(new Event(Event.COMPLETE));
         }
     }

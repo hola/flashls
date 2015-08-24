@@ -22,7 +22,7 @@
     import org.mangui.hls.utils.AES;
     import org.mangui.hls.utils.PTS;
     import org.hola.JSURLStream;
-    import org.hola.WorkerUtils;
+    import org.hola.HSettings;
 
     import flash.events.*;
     import flash.net.*;
@@ -101,15 +101,9 @@
         private static const LOADING_FRAGMENT_IO_ERROR : int = 4;
         private static const LOADING_KEY_IO_ERROR : int = 5;
 
-        public static var hola_api_inited:Boolean;
-        public static var g_hls_mode:Boolean = false;
+        private static var hola_api_inited:Boolean;
         public static var g_bandwidth:Number = 0;
-        public var hls_mode:Boolean = false;
 
-        public static function hola_set_hls_mode(on:Boolean):Boolean {
-            g_hls_mode = on;
-            return on;
-        }
         private static function timerHandler():void {
             ExternalInterface.call('window.hola_jwplayer_timer');
         }
@@ -127,8 +121,6 @@
             {
                 ExternalInterface.call('console.log', 'FragmentLoader hola_api_inited');
                 hola_api_inited = true;
-                ExternalInterface.addCallback("hola_set_hls_mode",
-                        FragmentLoader.hola_set_hls_mode); 
                 ExternalInterface.addCallback("hola_set_timeout", FragmentLoader.hola_set_timeout);
                 ExternalInterface.addCallback("hola_hls_set_bandwidth", FragmentLoader.hola_hls_set_bandwidth);
              }
@@ -926,7 +918,7 @@
                         _frag_current.program_date + fragData.tag_pts_start_offset);
                     var processing_duration : Number = (getTimer() - _frag_current.metrics.loading_request_time);
                     var bandwidth : Number = Math.round(fragData.bytesLoaded * 8000 / processing_duration);
-                    if (hls_mode && g_bandwidth)
+                    if (HSettings.enabled && g_bandwidth)
                         bandwidth = g_bandwidth;
                     var tagsMetrics : HLSLoadMetrics = new HLSLoadMetrics(_level, bandwidth, fragData.tag_pts_end_offset, processing_duration);
                     _hls.dispatchEvent(new HLSEvent(HLSEvent.TAGS_LOADED, tagsMetrics));
@@ -952,7 +944,7 @@
                 return;
             var hlsError : HLSError;
             var fragData : FragmentData = _frag_current.data;
-            if (WorkerUtils.worker)
+            if (HSettings.use_worker)
             {
                 fragData.pts_min_audio = o.pts_min_audio;
                 fragData.pts_max_audio = o.pts_max_audio;

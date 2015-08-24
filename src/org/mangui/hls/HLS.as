@@ -19,6 +19,7 @@ package org.mangui.hls {
     import org.mangui.hls.loader.FragmentLoader;
     import org.mangui.hls.stream.HLSNetStream;
     import org.hola.WorkerUtils;
+    import org.hola.HSettings;
     import flash.external.ExternalInterface;
 
     CONFIG::LOGGING {
@@ -36,9 +37,9 @@ package org.mangui.hls {
         private var _client : Object = {};
         private var _stage : Stage;
         private var _url:String;
-        public static var hola_api_inited:Boolean;
-        public static var g_curr_id:Number = 0;
-        public static var g_curr_hls:HLS;
+        private static var hola_api_inited:Boolean;
+        private static var g_curr_id:Number = 0;
+        private static var g_curr_hls:HLS;
 
         private static function hola_version() : Object
         {
@@ -81,6 +82,7 @@ package org.mangui.hls {
 
         /** Create and connect all components. **/
         public function HLS() {
+            HSettings.init();
             WorkerUtils.start_worker();
             if (!hola_api_inited && ExternalInterface.available)
             {
