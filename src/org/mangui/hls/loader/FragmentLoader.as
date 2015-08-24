@@ -22,6 +22,7 @@
     import org.mangui.hls.utils.AES;
     import org.mangui.hls.utils.PTS;
     import org.hola.JSURLStream;
+    import org.hola.WorkerUtils;
 
     import flash.events.*;
     import flash.net.*;
@@ -472,7 +473,10 @@
                 bytes.position = bytes.length;
                 bytes.writeBytes(data);
                 data = bytes;
-                _demux = DemuxHelper.probe(data, _levels[level], _hls.stage, _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingVideoMetadataHandler);
+                _demux = DemuxHelper.probe(data, _levels[level], _hls.stage,
+                    _fragParsingAudioSelectionHandler,
+                    _fragParsingProgressHandler, _fragParsingCompleteHandler,
+                    _fragParsingVideoMetadataHandler);
             }
             if (_demux) {
                 _demux.append(data);
@@ -501,8 +505,12 @@
                 }
                 var bytes : ByteArray = new ByteArray();
                 fragData.bytes.position = _frag_current.byterange_start_offset;
-                fragData.bytes.readBytes(bytes, 0, _frag_current.byterange_end_offset - _frag_current.byterange_start_offset);
-                _demux = DemuxHelper.probe(bytes, _levels[level], _hls.stage, _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingVideoMetadataHandler);
+                fragData.bytes.readBytes(bytes, 0,
+                    _frag_current.byterange_end_offset - _frag_current.byterange_start_offset);
+                _demux = DemuxHelper.probe(bytes, _levels[level], _hls.stage,
+                    _fragParsingAudioSelectionHandler,
+                    _fragParsingProgressHandler,_fragParsingCompleteHandler,
+                    _fragParsingVideoMetadataHandler);
                 if (_demux) {
                     bytes.position = 0;
                     _demux.append(bytes);
@@ -546,6 +554,7 @@
 
             if (_demux) {
                 _demux.cancel();
+                // XXX bahaa: _demux.close();
                 _demux = null;
             }
 
@@ -736,6 +745,7 @@
                 _keystreamloader.addEventListener(Event.COMPLETE, _keyLoadCompleteHandler);
             }
             if (_hasDiscontinuity || _switchlevel) {
+                // XXX bahaa: _demux.close();
                 _demux = null;
             }
             frag.metrics.loading_request_time = getTimer();
@@ -906,7 +916,13 @@
                         }
                     }
                     // provide tags to HLSNetStream
-                    _tags_callback(_level, _frag_current.continuity, _frag_current.seqnum, !fragData.video_found, fragData.video_width, fragData.video_height, _frag_current.tag_list, fragData.tags, fragData.tag_pts_min, fragData.tag_pts_max, _hasDiscontinuity, min_offset, _frag_current.program_date + fragData.tag_pts_start_offset);
+                    _tags_callback(_level, _frag_current.continuity,
+                        _frag_current.seqnum, !fragData.video_found,
+                        fragData.video_width, fragData.video_height,
+                        _frag_current.tag_list, fragData.tags,
+                        fragData.tag_pts_min, fragData.tag_pts_max,
+                        _hasDiscontinuity, min_offset,
+                        _frag_current.program_date + fragData.tag_pts_start_offset);
                     var processing_duration : Number = (getTimer() - _frag_current.metrics.loading_request_time);
                     var bandwidth : Number = Math.round(fragData.bytesLoaded * 8000 / processing_duration);
                     if (hls_mode && g_bandwidth)
@@ -928,11 +944,32 @@
         }
 
         /** triggered when demux has completed fragment parsing **/
-        private function _fragParsingCompleteHandler() : void {
+        private function _fragParsingCompleteHandler(o : Object = null,
+            tags : Vector.<FLVTag> = null) : void
+        {
             if (_loading_state == LOADING_IDLE)
                 return;
             var hlsError : HLSError;
             var fragData : FragmentData = _frag_current.data;
+            if (WorkerUtils.worker)
+            {
+                fragData.pts_min_audio = o.pts_min_audio;
+                fragData.pts_max_audio = o.pts_max_audio;
+                fragData.pts_min_video = o.pts_min_video;
+                fragData.pts_max_video = o.pts_max_video;
+                fragData.audio_found = o.audio_found;
+                fragData.video_found = o.video_found;
+                fragData.tags_pts_min_audio = o.tags_pts_min_audio;
+                fragData.tags_pts_max_audio = o.tags_pts_max_audio;
+                fragData.tags_pts_min_video = o.tags_pts_min_video;
+                fragData.tags_pts_max_video = o.tags_pts_max_video;
+                fragData.tags_audio_found = o.tags_audio_found;
+                fragData.tags_video_found = o.tags_video_found;
+                fragData.video_width = o.video_width;
+                fragData.video_height = o.video_height;
+                for each (var tag : FLVTag in tags)
+                    fragData.tags.push(tag);
+            }
             if (!fragData.audio_found && !fragData.video_found) {
                 hlsError = new HLSError(HLSError.FRAGMENT_PARSING_ERROR, _frag_current.url, "error parsing fragment, no tag found");
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
@@ -999,7 +1036,14 @@
                 var tagsMetrics : HLSLoadMetrics = new HLSLoadMetrics(_level, fragMetrics.bandwidth, fragData.pts_max - fragData.pts_min, fragMetrics.processing_duration);
 
                 if (fragData.tags.length) {
-                    _tags_callback(_level, _frag_current.continuity, _frag_current.seqnum, !fragData.video_found, fragData.video_width, fragData.video_height, _frag_current.tag_list, fragData.tags, fragData.tag_pts_min, fragData.tag_pts_max, _hasDiscontinuity, start_offset + fragData.tag_pts_start_offset / 1000, _frag_current.program_date + fragData.tag_pts_start_offset);
+                    _tags_callback(_level, _frag_current.continuity,
+                        _frag_current.seqnum, !fragData.video_found,
+                        fragData.video_width, fragData.video_height,
+                        _frag_current.tag_list, fragData.tags,
+                        fragData.tag_pts_min, fragData.tag_pts_max,
+                        _hasDiscontinuity,
+                        start_offset + fragData.tag_pts_start_offset / 1000,
+                        _frag_current.program_date + fragData.tag_pts_start_offset);
                     _hls.dispatchEvent(new HLSEvent(HLSEvent.TAGS_LOADED, tagsMetrics));
                     if (fragData.tags_audio_found) {
                         fragData.tags_pts_min_audio = fragData.tags_pts_max_audio;

@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
  package org.mangui.hls.demux {
     import org.mangui.hls.model.Level;
+    import org.hola.WorkerUtils;
 
     import flash.display.DisplayObject;
     import flash.utils.ByteArray;
@@ -11,7 +12,10 @@
         import org.mangui.hls.utils.Log;
     }
     public class DemuxHelper {
-        public static function probe(data : ByteArray, level : Level, displayObject : DisplayObject, audioselect : Function, progress : Function, complete : Function, videometadata : Function) : Demuxer {
+        public static function probe(data : ByteArray, level : Level,
+            displayObject : DisplayObject, audioselect : Function,
+            progress : Function, complete : Function, videometadata : Function) : Demuxer
+        {
             data.position = 0;
             CONFIG::LOGGING {
                 Log.debug("probe fragment type");
@@ -32,6 +36,11 @@
                 CONFIG::LOGGING {
                     Log.debug("TS match + H264 signaled in Manifest, use TS demuxer");
                 }
+                if (WorkerUtils.worker)
+                {
+                    return new TSDemuxer2(displayObject, audioselect, progress,
+                        complete, videometadata);
+                }
                 return new TSDemuxer(displayObject, audioselect, progress, complete, videometadata);
             } else if (aac_match && level.codec_aac) {
                 CONFIG::LOGGING {
@@ -48,6 +57,11 @@
             } else if (mp3_match) {
                 return new MP3Demuxer(audioselect, progress, complete);
             } else if (ts_match) {
+                if (WorkerUtils.worker)
+                {
+                    return new TSDemuxer2(displayObject, audioselect, progress,
+                        complete, videometadata);
+                }
                 return new TSDemuxer(displayObject, audioselect, progress, complete, videometadata);
             } else {
                 CONFIG::LOGGING {

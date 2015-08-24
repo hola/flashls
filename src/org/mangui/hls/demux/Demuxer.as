@@ -11,6 +11,8 @@
 
         function cancel() : void;
 
+        function close() : void;
+
         function  audio_expected() : Boolean;
 
         function  video_expected() : Boolean;

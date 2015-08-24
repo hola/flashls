@@ -34,6 +34,8 @@
         public var dts : Number;
         /** Type of FLV tag.**/
         public var type : int;
+        private var _locked : Boolean;
+        private var _data : ByteArray;
 
         /** Get the FLV file header. **/
         public static function getHeader() : ByteArray {
@@ -86,8 +88,20 @@
         }
         ;
 
+        public function lock() : void {
+            _locked = true;
+        }
+
+        public function set data(data : ByteArray) : void {
+            if (!_locked)
+                throw new Error("set data on unlocked FLVTag");
+            _data = data;
+        }
+
         /** Returns the tag data. **/
         public function get data() : ByteArray {
+            if (_locked)
+                return _data;
             var array : ByteArray;
             /* following specification http://download.macromedia.com/f4v/video_file_format_spec_v10_1.pdf */
 
@@ -149,6 +163,8 @@
 
         /** push a data pointer into the frame. **/
         public function push(array : ByteArray, start : int, length : int) : void {
+            if (_locked)
+                throw new Error("FLVTag is locked");
             pointers.push(new TagData(array, start, length));
         }
         ;

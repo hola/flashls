@@ -1,8 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
- package org.mangui.hls.demux {
-    import flash.utils.getTimer;
+package org.mangui.hls.demux {
     import flash.display.DisplayObject;
 
     import org.mangui.hls.flv.FLVTag;
@@ -10,8 +9,12 @@
 
     import flash.events.Event;
     import flash.events.EventDispatcher;
-    import flash.utils.ByteArray;
     import flash.net.ObjectEncoding;
+    import flash.system.Worker;
+    import flash.system.MessageChannel;
+    import flash.utils.*;
+    import org.mangui.hls.model.FragmentData;
+    import org.mangui.hls.utils.PTS;
 
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
@@ -19,7 +22,8 @@
         import org.mangui.hls.utils.Hex;
     }
     /** Representation of an MPEG transport stream. **/
-    public class TSDemuxer extends EventDispatcher implements Demuxer {
+    public class TSDemuxerWorker extends EventDispatcher implements Demuxer {
+        private var _id : uint;
         /** read position **/
         private var _read_position : uint;
         /** is bytearray full ? **/
@@ -47,15 +51,8 @@
         private var _id3Id : int;
         /** Vector of audio/video tags **/
         private var _tags : Vector.<FLVTag>;
-        /** Display Object used to schedule parsing **/
-        private var _displayObject : DisplayObject;
         /** Byte data to be read **/
         private var _data : ByteArray;
-        /* callback functions for audio selection, and parsing progress/complete */
-        private var _callback_audioselect : Function;
-        private var _callback_progress : Function;
-        private var _callback_complete : Function;
-        private var _callback_videometadata : Function;
         /* current audio PES */
         private var _curAudioPES : ByteArray;
         /* current video PES */
@@ -72,6 +69,9 @@
         private var _adifTagInserted : Boolean = false;
         /* last AVCC byte Array */
         private var _avcc : ByteArray;
+        private var _ochan : MessageChannel;
+        private var _ichan : MessageChannel;
+        private var _fragData : FragmentData;
 
         public static function probe(data : ByteArray) : Boolean {
             var pos : uint = data.position;
@@ -84,9 +84,8 @@
                         if (data.readByte() == SYNCBYTE) {
                             data.position = pos + i;
                             return true;
-                        } else {
-                            data.position = pos + i + 1;
                         }
+                        data.position = pos + i + 1;
                     }
                 }
             }
@@ -95,24 +94,51 @@
         }
 
         /** Transmux the M2TS file into an FLV file. **/
-        public function TSDemuxer(displayObject : DisplayObject, callback_audioselect : Function, callback_progress : Function, callback_complete : Function, callback_videometadata : Function) {
+        public function TSDemuxerWorker(id : uint) {
             _curAudioPES = null;
             _curVideoPES = null;
             _curId3PES = null;
             _curVideoTag = null;
             _curNalUnit = null;
             _adtsFrameOverflow = null;
-            _callback_audioselect = callback_audioselect;
-            _callback_progress = callback_progress;
-            _callback_complete = callback_complete;
-            _callback_videometadata = callback_videometadata;
             _pmtParsed = false;
             _packetsBeforePMT = false;
             _pmtId = _avcId = _audioId = _id3Id = -1;
             _audioIsAAC = false;
             _tags = new Vector.<FLVTag>();
-            _displayObject = displayObject;
+            _id = id;
+            _ochan = Worker.current.getSharedProperty("TSDemux_w2m_"+_id);
+            _ichan = Worker.current.getSharedProperty("TSDemux_m2w_"+_id);
+            _ichan.addEventListener(Event.CHANNEL_MESSAGE, onmsg);
+            // XXX bahaa: how to unset?
+            Worker.current.setSharedProperty("TSDemux_m2w_"+_id, null);
+            Worker.current.setSharedProperty("TSDemux_m2w_"+_id, null);
         };
+
+        private function onmsg(e : Event) : void {
+            var msg : Object = _ichan.receive();
+            switch (msg.cmd)
+            {
+            case "append": append(_ichan.receive()); break;
+            case "cancel": cancel(); break;
+            case "notifycomplete": notifycomplete(); break;
+            case "close": close(); break;
+            }
+        }
+
+        CONFIG::LOGGING
+        private function log(s : String) : void {
+            if (_ochan)
+                _ochan.send({cmd: "log", args: s});
+        }
+
+        public function close() : void {
+            if (!_ochan)
+                return;
+            _ichan.close();
+            _ochan.close();
+            _ichan = _ochan = null;
+        }
 
         /** append new TS data */
         public function append(data : ByteArray) : void {
@@ -121,7 +147,6 @@
                 _data_complete = false;
                 _read_position = 0;
                 _avcc = null;
-                _displayObject.addEventListener(Event.ENTER_FRAME, _parseTimer);
             }
             _data.position = _data.length;
             _data.writeBytes(data, data.position);
@@ -141,14 +166,11 @@
             _adtsFrameOverflow = null;
             _avcc = null;
             _tags = new Vector.<FLVTag>();
-            _displayObject.removeEventListener(Event.ENTER_FRAME, _parseTimer);
-        }
-
-        public function close() : void {
         }
 
         public function notifycomplete() : void {
             _data_complete = true;
+            _parse();
         }
 
         public function audio_expected() : Boolean {
@@ -159,16 +181,113 @@
             return (_avcId != -1);
         }
 
+        private function init_fragData() : void {
+            _fragData = new FragmentData();
+            _fragData.tags = new Vector.<FLVTag>();
+            _fragData.audio_found = _fragData.video_found = false;
+            _fragData.pts_min_audio = _fragData.pts_min_video =
+                _fragData.tags_pts_min_audio =
+                _fragData.tags_pts_min_video = Number.POSITIVE_INFINITY;
+            _fragData.pts_max_audio = _fragData.pts_max_video =
+                _fragData.tags_pts_max_audio =
+                _fragData.tags_pts_max_video = Number.NEGATIVE_INFINITY;
+        }
+
+        private function onprogress(tags : Vector.<FLVTag>) : void {
+            if (!_fragData)
+                init_fragData();
+            var tag : FLVTag;
+            /* ref PTS / DTS value for PTS looping */
+            var ref_pts : Number = _fragData.pts_start_computed; // XXX bahaa: get this somehow
+            ref_pts = NaN;
+            // Audio PTS/DTS normalization + min/max computation
+            for each (tag in tags) {
+                tag.pts = PTS.normalize(ref_pts, tag.pts);
+                tag.dts = PTS.normalize(ref_pts, tag.dts);
+                switch( tag.type ) {
+                    case FLVTag.AAC_HEADER:
+                    case FLVTag.AAC_RAW:
+                    case FLVTag.MP3_RAW:
+                        _fragData.audio_found = true;
+                        _fragData.tags_audio_found = true;
+                        _fragData.tags_pts_min_audio = Math.min(_fragData.tags_pts_min_audio, tag.pts);
+                        _fragData.tags_pts_max_audio = Math.max(_fragData.tags_pts_max_audio, tag.pts);
+                        _fragData.pts_min_audio = Math.min(_fragData.pts_min_audio, tag.pts);
+                        _fragData.pts_max_audio = Math.max(_fragData.pts_max_audio, tag.pts);
+                        break;
+                    case FLVTag.AVC_HEADER:
+                    case FLVTag.AVC_NALU:
+                    case FLVTag.DISCONTINUITY:
+                        _fragData.video_found = true;
+                        _fragData.tags_video_found = true;
+                        _fragData.tags_pts_min_video = Math.min(_fragData.tags_pts_min_video, tag.pts);
+                        _fragData.tags_pts_max_video = Math.max(_fragData.tags_pts_max_video, tag.pts);
+                        _fragData.pts_min_video = Math.min(_fragData.pts_min_video, tag.pts);
+                        _fragData.pts_max_video = Math.max(_fragData.pts_max_video, tag.pts);
+                        break;
+                    case FLVTag.METADATA:
+                    default:
+                        break;
+                }
+                _fragData.tags.push(tag);
+            }
+        }
+
+        private function oncomplete() : void {
+            var fd : FragmentData = _fragData;
+            _fragData = null;
+            var arr : ByteArray = new ByteArray();
+            arr.shareable = true;
+            for each (var tag : FLVTag in fd.tags) {
+                var data : ByteArray = tag.data;
+                arr.writeBoolean(tag.keyframe);
+                arr.writeFloat(tag.pts);
+                arr.writeFloat(tag.dts);
+                arr.writeInt(tag.type);
+                arr.writeInt(data.length);
+                arr.writeBytes(data);
+            }
+            _ochan.send({cmd: "complete", args: {
+                pts_min_audio: fd.pts_min_audio,
+                pts_max_audio: fd.pts_max_audio,
+                pts_min_video: fd.pts_min_video,
+                pts_max_video: fd.pts_max_video,
+                audio_found: fd.audio_found,
+                video_found: fd.video_found,
+                tags_pts_min_audio: fd.tags_pts_min_audio,
+                tags_pts_max_audio: fd.tags_pts_max_audio,
+                tags_pts_min_video: fd.tags_pts_min_video,
+                tags_pts_max_video: fd.tags_pts_max_video,
+                tags_audio_found: fd.tags_audio_found,
+                tags_video_found: fd.tags_video_found,
+                video_width: fd.video_width,
+                video_height: fd.video_height
+            }});
+            _ochan.send(arr);
+        }
+
+        private function onvideometadata(width : uint, height : uint) : void {
+            if (!_fragData)
+                init_fragData();
+            if (_fragData.video_width)
+                return;
+            _fragData.video_width = width;
+            _fragData.video_height = height;
+            _ochan.send({cmd: "videometadata", args: [width, height]});
+        }
+
+        private function onaudioselect(tracks : Vector.<AudioTrack>) : AudioTrack {
+            return tracks[0]; // XXX bahaa: hack
+        }
+
         /** Parse a limited amount of packets each time to avoid blocking **/
-        private function _parseTimer(e : Event) : void {
-            var start_time : int = getTimer();
+        private function _parse() : void {
             _data.position = _read_position;
             // dont spend more than 20ms demuxing TS packets to avoid loosing frames
-            while ((_data.bytesAvailable >= PACKETSIZE) && ((getTimer() - start_time) < 20)) {
+            while (_data.bytesAvailable >= PACKETSIZE)
                 _parseTSPacket();
-            }
             if (_tags.length) {
-                _callback_progress(_tags);
+                onprogress(_tags);
                 _tags = new Vector.<FLVTag>();
             }
             if (_data) {
@@ -184,9 +303,8 @@
                             Log.error("TS: no PMT found, report parsing complete");
                         }
                     }
-                    _displayObject.removeEventListener(Event.ENTER_FRAME, _parseTimer);
                     _flush();
-                    _callback_complete();
+                    oncomplete();
                 }
             }
         }
@@ -267,7 +385,7 @@
                 CONFIG::LOGGING {
                     Log.debug2("TS: flush " + _tags.length + " tags");
                 }
-                _callback_progress(_tags);
+                onprogress(_tags);
                 _tags = new Vector.<FLVTag>();
             }
             CONFIG::LOGGING {
@@ -414,7 +532,7 @@
                     sps.position = 0;
                     if (spsInfo.width && spsInfo.height) {
                         // notify upper layer
-                        _callback_videometadata(spsInfo.width, spsInfo.height);
+                        onvideometadata(spsInfo.width, spsInfo.height);
                     }
                 } else if (frame.type == 8) {
                     if (!pps_found) {
@@ -543,7 +661,7 @@
         /** Parse TS packet. **/
         private function _parseTSPacket() : void {
             // Each packet is 188 bytes.
-            var todo : uint = TSDemuxer.PACKETSIZE;
+            var todo : uint = PACKETSIZE;
             // Sync byte.
             if (_data.readByte() != SYNCBYTE) {
                 var pos_start : uint = _data.position - 1;
@@ -792,7 +910,7 @@
             }
             // provide audio track List to audio select callback. this callback will return the selected audio track
             var audioPID : int;
-            var audioTrack : AudioTrack = _callback_audioselect(audioList);
+            var audioTrack : AudioTrack = onaudioselect(audioList);
             if (audioTrack) {
                 audioPID = audioTrack.id;
                 _audioIsAAC = audioTrack.isAAC;

@@ -3,6 +3,7 @@ package org.mangui.hls {
     import flash.events.Event;
     import flash.system.Worker;
     import flash.system.MessageChannel;
+    import org.mangui.hls.demux.TSDemuxerWorker;
     import org.hola.Base64;
 
     public class HLSWorker extends Sprite {
@@ -19,6 +20,7 @@ package org.mangui.hls {
             var msg : * = _ichan.receive();
             switch (msg.cmd)
             {
+            case "TSDemux.init": new TSDemuxerWorker(msg.id); break;
             case "b64.decode":
                 var arr : ByteArray = _ichan.receive();
                 arr = Base64.decode(arr);
