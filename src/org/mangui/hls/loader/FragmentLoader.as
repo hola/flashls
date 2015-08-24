@@ -554,7 +554,7 @@
 
             if (_demux) {
                 _demux.cancel();
-                // XXX bahaa: _demux.close();
+                _demux.close();
                 _demux = null;
             }
 
@@ -745,7 +745,8 @@
                 _keystreamloader.addEventListener(Event.COMPLETE, _keyLoadCompleteHandler);
             }
             if (_hasDiscontinuity || _switchlevel) {
-                // XXX bahaa: _demux.close();
+                if (_demux)
+                    _demux.close();
                 _demux = null;
             }
             frag.metrics.loading_request_time = getTimer();
