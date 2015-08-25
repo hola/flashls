@@ -1,6 +1,8 @@
 package org.hola {
     import flash.external.ExternalInterface;
+    CONFIG::HAVE_WORKER {
     import flash.system.Worker;
+    }
 
     public class HSettings {
         private static var _inited : Boolean = false;

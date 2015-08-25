@@ -7,14 +7,15 @@ package org.mangui.hls.demux {
     import flash.events.Event;
     import flash.events.EventDispatcher;
     import flash.utils.ByteArray;
+    CONFIG::HAVE_WORKER {
+    import org.hola.WorkerUtils;
     import flash.system.Worker;
     import flash.system.MessageChannel;
-    import org.hola.WorkerUtils;
-
+    }
     CONFIG::LOGGING {
-        import org.mangui.hls.utils.Log;
-        import org.mangui.hls.HLSSettings;
-        import org.mangui.hls.utils.Hex;
+    import org.mangui.hls.utils.Log;
+    import org.mangui.hls.HLSSettings;
+    import org.mangui.hls.utils.Hex;
     }
     /** Representation of an MPEG transport stream. **/
     public class TSDemuxer2 extends EventDispatcher implements Demuxer {
@@ -29,9 +30,11 @@ package org.mangui.hls.demux {
         private var _callback_progress : Function;
         private var _callback_complete : Function;
         private var _callback_videometadata : Function;
+        CONFIG::HAVE_WORKER {
         private var _worker : Worker;
         private var _ochan : MessageChannel;
         private var _ichan : MessageChannel;
+        }
 
         public static function probe(data : ByteArray) : Boolean {
             var pos : uint = data.position;
@@ -58,6 +61,7 @@ package org.mangui.hls.demux {
             callback_audioselect : Function, callback_progress : Function,
             callback_complete : Function, callback_videometadata : Function)
         {
+            CONFIG::HAVE_WORKER {
             _callback_audioselect = callback_audioselect;
             _callback_progress = callback_progress;
             _callback_complete = callback_complete;
@@ -70,8 +74,10 @@ package org.mangui.hls.demux {
             _worker.setSharedProperty("TSDemux_m2w_"+_id, _ochan);
             _worker.setSharedProperty("TSDemux_w2m_"+_id, _ichan);
             WorkerUtils.send({cmd: "TSDemux.init", id: _id});
+            }
         };
 
+        CONFIG::HAVE_WORKER
         private function onmsg(e : Event) : void {
             var msg : Object = _ichan.receive();
             switch (msg.cmd)
@@ -110,18 +116,24 @@ package org.mangui.hls.demux {
 
         /** append new TS data */
         public function append(data : ByteArray) : void {
+            CONFIG::HAVE_WORKER {
             _ochan.send({cmd: "append"});
             data.shareable = true; // XXX bahaa: verify safe to transfer
             _ochan.send(data);
+            }
         }
 
         /** cancel demux operation */
         public function cancel() : void {
+            CONFIG::HAVE_WORKER {
             _ochan.send({cmd: "cancel"});
+            }
         }
 
         public function notifycomplete() : void {
+            CONFIG::HAVE_WORKER {
             _ochan.send({cmd: "notifycomplete"});
+            }
         }
 
         public function audio_expected() : Boolean {
@@ -133,12 +145,14 @@ package org.mangui.hls.demux {
         }
 
         public function close() : void {
+            CONFIG::HAVE_WORKER {
             if (!_ochan)
                 return;
             _ochan.send({cmd: "close"});
             _ichan.close();
             _ochan.close();
             _ichan = _ochan = null;
+            }
         }
     }
 }

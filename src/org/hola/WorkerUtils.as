@@ -1,12 +1,16 @@
 package org.hola {
+    CONFIG::HAVE_WORKER {
     import flash.system.Worker;
     import flash.system.WorkerDomain;
     import flash.system.MessageChannel;
+    }
     import flash.events.EventDispatcher
     import flash.events.Event;
     import org.hola.HEvent;
 
     public class WorkerUtils {
+        private static var _dispatcher : EventDispatcher =
+            new EventDispatcher();
         CONFIG::HAVE_WORKER {
         CONFIG::DEBUG {
         [Embed(source="../../../bin/debug/HLSWorker.swf",
@@ -18,15 +22,13 @@ package org.hola {
             mimeType="application/octet-stream")]
         private static var WORKER_SWF : Class;
         }
-        }
         private static var _ochan : MessageChannel;
         private static var _ichan : MessageChannel;
         private static var _worker : Worker;
-        private static var _dispatcher : EventDispatcher =
-            new EventDispatcher();
 
         public static function get worker() : Worker {
             return _worker;
+        }
         }
 
         public static function start_worker() : void {
@@ -49,15 +51,19 @@ package org.hola {
         }
 
         public static function send(msg : *) : void {
+            CONFIG::HAVE_WORKER {
             if (!_ochan)
                 throw new Error("worker not running");
             _ochan.send(msg);
+            }
         }
 
         public static function recv() : * {
+            CONFIG::HAVE_WORKER {
             if (!_ichan)
                 throw new Error("worker not running");
             return _ichan.receive();
+            }
         }
 
         public static function addEventListener(...args) : void
