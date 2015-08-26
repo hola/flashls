@@ -28,21 +28,22 @@ package org.hola {
         private var _req_id : String;
 
         public function JSURLStream(){
-            _hola_managed = HSettings.enabled;
+            _hola_managed = HSettings.enabled && ExternalInterface.available;
             addEventListener(Event.OPEN, onOpen);
-            ExternalInterface.marshallExceptions = true;
             super();
+            if (!_hola_managed || js_api_inited)
+                return;
             // Connect calls to JS.
-            if (ExternalInterface.available && !js_api_inited){
-                ZErr.log('JSURLStream init api');
-                js_api_inited = true;
-                ExternalInterface.addCallback('hola_onFragmentData',
-                    hola_onFragmentData);
-            }
+            ZErr.log('JSURLStream init api');
+            ExternalInterface.marshallExceptions = true;
+            ExternalInterface.addCallback('hola_onFragmentData',
+                hola_onFragmentData);
+            js_api_inited = true;
         }
 
         protected function _trigger(cb:String, data:Object) : void {
-            if (!ExternalInterface.available) {
+            if (!_hola_managed)
+            {
                 // XXX arik: need ZErr.throw
                 ZErr.log('invalid trigger');
                 throw new Error('invalid trigger');
@@ -97,7 +98,7 @@ package org.hola {
 
         override public function load(request : URLRequest) : void {
             // XXX arik: cleanup previous if hola mode changed
-            _hola_managed = HSettings.enabled;
+            _hola_managed = HSettings.enabled && ExternalInterface.available;
             req_count++;
             _req_id = 'req'+req_count;
             if (!_hola_managed)
@@ -112,14 +113,11 @@ package org.hola {
         private function onOpen(event : Event) : void { _connected = true; }
 
         private function decode(str : String) : void {
-            var data : ByteArray;
+            if (!str)
+                return on_decoded_data(null);
             if (!HSettings.use_worker)
-            {
-                if (str)
-                    data = Base64.decode_str(str);
-                return on_decoded_data(data);
-            }
-            data = new ByteArray();
+                return on_decoded_data(Base64.decode_str(str));
+            var data : ByteArray = new ByteArray();
             data.shareable = true;
             data.writeUTFBytes(str);
             WorkerUtils.send({cmd: "b64.decode", id: _req_id});
@@ -130,8 +128,7 @@ package org.hola {
             var msg : Object = e.data;
             if (!_req_id || _req_id!=msg.id || msg.cmd!="b64.decode")
                 return;
-            var data : ByteArray = WorkerUtils.recv();
-            on_decoded_data(data);
+            on_decoded_data(WorkerUtils.recv());
         }
 
         private function on_decoded_data(data : ByteArray) : void {
