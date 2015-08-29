@@ -2,12 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package org.hola {
-    import flash.events.Event;
-    import flash.events.IOErrorEvent;
-    import flash.events.ProgressEvent;
+    import flash.events.*;
     import flash.external.ExternalInterface;
     import flash.net.URLRequest;
     import flash.net.URLStream;
+    import flash.net.URLRequestHeader;
+    import flash.net.URLRequestMethod;
     import flash.utils.ByteArray;
     import flash.utils.getTimer;
     import flash.utils.Timer;
@@ -26,10 +26,13 @@ package org.hola {
         private var _curr_data : Object;
         private var _hola_managed : Boolean = false;
         private var _req_id : String;
+        private var _self_load : Boolean = false;
+        private var _events : Object;
+        private var _size : Number;
 
         public function JSURLStream(){
             _hola_managed = HSettings.enabled && ExternalInterface.available;
-            addEventListener(Event.OPEN, onOpen);
+            addEventListener(Event.OPEN, onopen);
             super();
             if (!_hola_managed || js_api_inited)
                 return;
@@ -41,8 +44,8 @@ package org.hola {
             js_api_inited = true;
         }
 
-        protected function _trigger(cb:String, data:Object) : void {
-            if (!_hola_managed)
+        protected function _trigger(cb : String, data : Object) : void {
+            if (!_hola_managed && !_self_load)
             {
                 // XXX arik: need ZErr.throw
                 ZErr.log('invalid trigger');
@@ -85,7 +88,7 @@ package org.hola {
         }
 
         override public function close() : void {
-            if (_hola_managed)
+            if (_hola_managed || _self_load)
             {
                 if (reqs[_req_id])
                     _trigger('abortFragment', {req_id: _req_id});
@@ -110,7 +113,40 @@ package org.hola {
             this.dispatchEvent(new Event(Event.OPEN));
         }
 
-        private function onOpen(event : Event) : void { _connected = true; }
+        private function onopen(e : Event) : void { _connected = true; }
+
+        private function onerror(e : ErrorEvent) : void {
+            _delete();
+            if (!_events.error)
+                return;
+            _trigger('onRequestEvent', {req_id: _req_id, event: 'error',
+                error: e.text, text: e.toString()});
+        }
+
+        private function onprogress(e : ProgressEvent) : void {
+            _size = e.bytesTotal;
+            if (!_events.progress)
+                return;
+            _trigger('onRequestEvent', {req_id: _req_id, event: 'progress',
+                loaded: e.bytesLoaded, total: e.bytesTotal,
+                text: e.toString()});
+        }
+
+        private function onstatus(e : HTTPStatusEvent) : void {
+            if (!_events.status)
+                return;
+            // XXX bahaa: get redirected/responseURL/responseHeaders
+            _trigger('onRequestEvent', {req_id: _req_id, event: 'status',
+                status: e.status, text: e.toString()});
+        }
+
+        private function oncomplete(e : Event) : void {
+            _delete();
+            if (!_events.complete)
+                return;
+            _trigger('onRequestEvent', {req_id: _req_id, event: 'complete',
+                size: _size, text: e.toString()});
+        }
 
         private function decode(str : String) : void {
             if (!str)
@@ -137,14 +173,14 @@ package org.hola {
                 data.position = 0;
                 if (_resource)
                 {
-                    var prev:uint = _resource.position;
+                    var prev : uint = _resource.position;
                     data.readBytes(_resource, _resource.length);
                     _resource.position = prev;
                 }
                 else
                     _resource = data;
                 // XXX arik: get finalLength from js
-                var finalLength:uint = _resource.length;
+                var finalLength : uint = _resource.length;
                 dispatchEvent(new ProgressEvent( ProgressEvent.PROGRESS, false,
                     false, _resource.length, finalLength));
             }
@@ -153,20 +189,41 @@ package org.hola {
                 resourceLoadingSuccess();
         }
 
+        private function self_load(o : Object) : void {
+            _self_load = true;
+            _hola_managed = false;
+            _events = o.events||{};
+            addEventListener(IOErrorEvent.IO_ERROR, onerror);
+            addEventListener(SecurityErrorEvent.SECURITY_ERROR, onerror);
+            addEventListener(ProgressEvent.PROGRESS, onprogress);
+            addEventListener(HTTPStatusEvent.HTTP_STATUS, onstatus);
+            addEventListener(Event.COMPLETE, oncomplete);
+            var req : URLRequest = new URLRequest(o.url);
+            req.method = o.method=="POST" ? URLRequestMethod.POST :
+                URLRequestMethod.GET;
+            // this doesn't seem to work. simply ignored
+            var headers : Object = o.headers||{};
+            for (var k : String in headers)
+                req.requestHeaders.push(new URLRequestHeader(k, headers[k]));
+            super.load(req);
+        }
+
         private function on_fragment_data(o : Object) : void {
             _curr_data = o;
+            if (o.self_load)
+                return self_load(o);
             if (o.error)
                 return resourceLoadingError();
             decode(o.data);
         }
 
-        protected static function hola_onFragmentData(o:Object):void{
-            var stream:JSURLStream;
+        protected static function hola_onFragmentData(o : Object) : void{
+            var stream : JSURLStream;
             try {
                 if (!(stream = reqs[o.req_id]))
                     throw new Error('req_id not found '+o.req_id);
                 stream.on_fragment_data(o);
-            } catch(err:Error){
+            } catch(err : Error){
                 ZErr.log('Error in hola_onFragmentData', ''+err,
                     ''+err.getStackTrace());
                 if (stream)
@@ -175,13 +232,17 @@ package org.hola {
             }
         }
 
-        protected function resourceLoadingError() : void {
+        private function _delete() : void {
             delete reqs[_req_id];
+        }
+
+        protected function resourceLoadingError() : void {
+            _delete();
             dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
         }
 
         protected function resourceLoadingSuccess() : void {
-            delete reqs[_req_id];
+            _delete();
             dispatchEvent(new Event(Event.COMPLETE));
         }
     }
