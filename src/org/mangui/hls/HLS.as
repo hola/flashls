@@ -45,7 +45,8 @@ package org.mangui.hls {
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.7'
+                patch_version: '1.0.7',
+                have_worker: CONFIG::HAVE_WORKER
             };
         }
         private static function hola_hls_get_video_url() : String {
