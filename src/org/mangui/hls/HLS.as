@@ -21,6 +21,7 @@ package org.mangui.hls {
     import org.hola.WorkerUtils;
     import org.hola.HSettings;
     import flash.external.ExternalInterface;
+    import org.hola.ZExternalInterface;
 
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
@@ -85,7 +86,7 @@ package org.mangui.hls {
         public function HLS() {
             HSettings.init();
             WorkerUtils.start_worker();
-            if (!hola_api_inited && ExternalInterface.available)
+            if (!hola_api_inited && ZExternalInterface.avail())
             {
                 ExternalInterface.call('console.log', 'HLS hola_api_inited');
                 hola_api_inited = true;
@@ -101,7 +102,7 @@ package org.mangui.hls {
             }
             g_curr_id++;
             g_curr_hls = this;
-            if (ExternalInterface.available)
+            if (ZExternalInterface.avail())
             {
                 ExternalInterface.call('console.log', 'HLS new ', g_curr_id);
                 ExternalInterface.call('window.postMessage',
@@ -144,7 +145,7 @@ package org.mangui.hls {
         }
         private function event_handler_func(name:String):Function{
             return function(event:HLSEvent):void{
-                if (!ExternalInterface.available)
+                if (!ZExternalInterface.avail())
                     return;
                 ExternalInterface.call('window.postMessage',
                     {id: name, hls_id: g_curr_id, url: event.url,
@@ -168,7 +169,7 @@ package org.mangui.hls {
         };
 
         public function dispose() : void {
-            if (ExternalInterface.available)
+            if (ZExternalInterface.avail())
             {
                 ExternalInterface.call('window.postMessage',
                     {id: 'flashls.hlsDispose', hls_id: g_curr_id}, '*');

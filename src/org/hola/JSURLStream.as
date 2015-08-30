@@ -4,6 +4,7 @@
 package org.hola {
     import flash.events.*;
     import flash.external.ExternalInterface;
+    import org.hola.ZExternalInterface;
     import flash.net.URLRequest;
     import flash.net.URLStream;
     import flash.net.URLRequestHeader;
@@ -31,7 +32,7 @@ package org.hola {
         private var _size : Number;
 
         public function JSURLStream(){
-            _hola_managed = HSettings.enabled && ExternalInterface.available;
+            _hola_managed = HSettings.enabled && ZExternalInterface.avail();
             addEventListener(Event.OPEN, onopen);
             super();
             if (!_hola_managed || js_api_inited)
@@ -101,7 +102,7 @@ package org.hola {
 
         override public function load(request : URLRequest) : void {
             // XXX arik: cleanup previous if hola mode changed
-            _hola_managed = HSettings.enabled && ExternalInterface.available;
+            _hola_managed = HSettings.enabled && ZExternalInterface.avail();
             req_count++;
             _req_id = 'req'+req_count;
             if (!_hola_managed)

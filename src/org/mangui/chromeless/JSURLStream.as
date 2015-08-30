@@ -9,6 +9,7 @@ package org.mangui.chromeless {
     import flash.events.TimerEvent;
     import flash.utils.Timer;
     import flash.external.ExternalInterface;
+    import org.hola.ZExternalInterface;
     import flash.events.Event;
     import flash.events.ProgressEvent;
     import flash.utils.ByteArray;
@@ -37,7 +38,7 @@ package org.mangui.chromeless {
             addEventListener(Event.OPEN, onOpen);
             super();
             // Connect calls to JS.
-            if (ExternalInterface.available) {
+            if (ZExternalInterface.avail()) {
                 _id = _instance_count;
                 _instance_count++;
                 CONFIG::LOGGING {
@@ -75,7 +76,7 @@ package org.mangui.chromeless {
             CONFIG::LOGGING {
             Log.info("JSURLStream.load:" + request.url);
             }
-            if (ExternalInterface.available) {
+            if (ZExternalInterface.avail()) {
                 ExternalInterface.call("onRequestResource" + _id, request.url);
                 this.dispatchEvent(new Event(Event.OPEN));
             } else {

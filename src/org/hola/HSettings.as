@@ -1,5 +1,6 @@
 package org.hola {
     import flash.external.ExternalInterface;
+    import org.hola.ZExternalInterface;
     CONFIG::HAVE_WORKER {
     import flash.system.Worker;
     }
@@ -21,7 +22,7 @@ package org.hola {
         }
 
         public static function init() : void {
-            if (_inited || !ExternalInterface.available)
+            if (_inited || !ZExternalInterface.avail())
                 return;
             _inited = true;
             ExternalInterface.addCallback("hola_settings", settings);

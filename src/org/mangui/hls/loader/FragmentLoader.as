@@ -30,6 +30,7 @@
     import flash.utils.Timer;
     import flash.utils.setTimeout;
     import flash.external.ExternalInterface;
+    import org.hola.ZExternalInterface;
     
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
@@ -117,7 +118,7 @@
         }
         /** Create the loader. **/
         public function FragmentLoader(hls : HLS, audioTrackController : AudioTrackController) : void {
-            if (!hola_api_inited && ExternalInterface.available)
+            if (!hola_api_inited && ZExternalInterface.avail())
             {
                 ExternalInterface.call('console.log', 'FragmentLoader hola_api_inited');
                 hola_api_inited = true;
