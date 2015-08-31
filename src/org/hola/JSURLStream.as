@@ -92,7 +92,10 @@ package org.hola {
             if (_hola_managed || _self_load)
             {
                 if (reqs[_req_id])
+                {
+                    delete reqs[_req_id];
                     _trigger('abortFragment', {req_id: _req_id});
+                }
                 WorkerUtils.removeEventListener(HEvent.WORKER_MESSAGE, onmsg);
             }
             if (super.connected)
@@ -101,7 +104,15 @@ package org.hola {
         }
 
         override public function load(request : URLRequest) : void {
-            // XXX arik: cleanup previous if hola mode changed
+            if (_hola_managed || _self_load)
+            {
+                if (reqs[_req_id])
+                {
+                    delete reqs[_req_id];
+                    _trigger('abortFragment', {req_id: _req_id});
+                }
+                WorkerUtils.removeEventListener(HEvent.WORKER_MESSAGE, onmsg);
+            }
             _hola_managed = HSettings.enabled && ZExternalInterface.avail();
             req_count++;
             _req_id = 'req'+req_count;
