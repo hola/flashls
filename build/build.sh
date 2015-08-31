@@ -6,6 +6,7 @@ fi
 cd $(dirname $(realpath $0))
 
 _OPT_DEBUG="-use-network=false \
+    -debug=true \
     -optimize=true \
     -define=CONFIG::DEBUG,true \
     -define=CONFIG::RELEASE,false \
