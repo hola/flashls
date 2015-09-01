@@ -112,9 +112,13 @@
         {
             setTimeout(timerHandler, ms);
         }
-        private static function hola_hls_set_bandwidth(bandwidth:Number) : void
+        private static function hola_setBandwidth(bandwidth:Number) : void
         {
             g_bandwidth = bandwidth;
+        }
+        private static function hola_hls_set_bandwidth(bandwidth:Number) : void
+        {
+            hola_setBandwidth(bandwidth);
         }
         /** Create the loader. **/
         public function FragmentLoader(hls : HLS, audioTrackController : AudioTrackController) : void {
@@ -123,6 +127,7 @@
                 ExternalInterface.call('console.log', 'FragmentLoader hola_api_inited');
                 hola_api_inited = true;
                 ExternalInterface.addCallback("hola_set_timeout", FragmentLoader.hola_set_timeout);
+                ExternalInterface.addCallback("hola_setBandwidth", FragmentLoader.hola_setBandwidth);
                 ExternalInterface.addCallback("hola_hls_set_bandwidth", FragmentLoader.hola_hls_set_bandwidth);
              }
             _hls = hls;
