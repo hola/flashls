@@ -35,7 +35,7 @@ package org.hola {
             _hola_managed = HSettings.enabled && ZExternalInterface.avail();
             addEventListener(Event.OPEN, onopen);
             super();
-            if (!_hola_managed || js_api_inited)
+            if (!ZExternalInterface.avail() || js_api_inited)
                 return;
             // Connect calls to JS.
             ZErr.log('JSURLStream init api');
@@ -233,7 +233,10 @@ package org.hola {
             var stream : JSURLStream;
             try {
                 if (!(stream = reqs[o.req_id]))
-                    throw new Error('req_id not found '+o.req_id);
+                {
+                    ZErr.log('req_id not found '+o.req_id);
+                    return;
+                }
                 stream.on_fragment_data(o);
             } catch(err : Error){
                 ZErr.log('Error in hola_onFragmentData', ''+err,
