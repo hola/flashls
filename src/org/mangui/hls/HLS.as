@@ -20,6 +20,7 @@ package org.mangui.hls {
     import org.mangui.hls.stream.HLSNetStream;
     import org.hola.WorkerUtils;
     import org.hola.HSettings;
+    import org.hola.FlashFetchBin;
     import flash.external.ExternalInterface;
     import org.hola.ZExternalInterface;
 
@@ -99,6 +100,7 @@ package org.mangui.hls {
                 ExternalInterface.addCallback("hola_hls_get_state", HLS.hola_hls_get_state);
                 ExternalInterface.addCallback("hola_hls_get_levels", HLS.hola_hls_get_levels);
                 ExternalInterface.addCallback("hola_hls_get_level", HLS.hola_hls_get_level);
+                FlashFetchBin.init();
             }
             g_curr_id++;
             g_curr_hls = this;
