@@ -15,6 +15,7 @@ package org.hola {
     import org.hola.WorkerUtils;
     import org.hola.HEvent;
     import org.hola.HSettings;
+    import org.hola.FlashFetchBin;
 
     public dynamic class JSURLStream extends URLStream {
         private static var js_api_inited : Boolean = false;
@@ -32,8 +33,6 @@ package org.hola {
             super();
             if (!ZExternalInterface.avail() || js_api_inited)
                 return;
-            // Connect calls to JS.
-            ZErr.log('JSURLStream init api');
             /* XXX arik: setting this to true will pass js exceptions to
              * as3 and as3 exceptions to js. this may break current customer
              * code
@@ -88,7 +87,7 @@ package org.hola {
             {
                 if (reqs[_req_id])
                 {
-                    delete reqs[_req_id];
+                    _delete();
                     _trigger('abortFragment', {req_id: _req_id});
                 }
                 WorkerUtils.removeEventListener(HEvent.WORKER_MESSAGE, onmsg);
@@ -155,7 +154,7 @@ package org.hola {
                     _resource = data;
                 // XXX arik: get finalLength from js
                 var finalLength : uint = _resource.length;
-                dispatchEvent(new ProgressEvent( ProgressEvent.PROGRESS, false,
+                dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false,
                     false, _resource.length, finalLength));
             }
             // XXX arik: dispatch httpStatus/httpResponseStatus
@@ -167,10 +166,44 @@ package org.hola {
             _curr_data = o;
             if (o.error)
                 return resourceLoadingError();
+            if (o.fetchBinReqId)
+                return fetch_bin(o);
             decode(o.data);
         }
 
-        protected static function hola_onFragmentData(o : Object) : void{
+        private function fetch_bin(o : Object) : void {
+            if (!(o.fetchBinReq = FlashFetchBin.req_list[o.fetchBinReqId]))
+                throw new Error('fetchBinReqId not found '+o.fetchBinReqId);
+            _fetch_bin(o);
+        }
+
+        private function _fetch_bin(o : Object) : void {
+            var fetchBinStream : URLStream = o.fetchBinReq.stream;
+            _resource = _resource || new ByteArray();
+            var prev : Number = _resource.position;
+            var len : Number =
+                Math.min(fetchBinStream.bytesAvailable, 128*1024);
+            if (len)
+            {
+                fetchBinStream.readBytes(_resource, _resource.length, len);
+                _resource.position = prev;
+                var finalLength : Number = o.fetchBinReq.bytesTotal;
+                dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false,
+                    false, _resource.length, finalLength));
+            }
+            if (_resource.length < o.fetchBinReq.bytesTotal)
+            {
+                FlashFetchBin.consumeDataTimeout(o.fetchBinReqId,
+                    _fetch_bin, 20, o);
+            }
+            else
+            {
+                resourceLoadingSuccess();
+                FlashFetchBin.hola_fetchBinRemove(o.fetchBinReqId);
+            }
+        }
+
+        public static function hola_onFragmentData(o : Object) : void{
             var stream : JSURLStream;
             try {
                 if (!(stream = reqs[o.req_id]))
