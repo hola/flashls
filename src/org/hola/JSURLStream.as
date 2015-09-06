@@ -39,7 +39,11 @@ package org.hola {
                 return;
             // Connect calls to JS.
             ZErr.log('JSURLStream init api');
+            /* XXX arik: setting this to true will pass js exceptions to
+             * as3 and as3 exceptions to js. this may break current customer
+             * code
             ExternalInterface.marshallExceptions = true;
+            */
             ExternalInterface.addCallback('hola_onFragmentData',
                 hola_onFragmentData);
             js_api_inited = true;
