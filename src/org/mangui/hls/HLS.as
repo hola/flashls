@@ -47,7 +47,7 @@ package org.mangui.hls {
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.12',
+                patch_version: '1.0.13',
                 have_worker: CONFIG::HAVE_WORKER
             };
         }
