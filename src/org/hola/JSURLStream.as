@@ -183,6 +183,9 @@ package org.hola {
             var prev : Number = _resource.position;
             var len : Number =
                 Math.min(fetchBinStream.bytesAvailable, 128*1024);
+            // XXX arik: seems that flashls already have timer to process data
+            // so no need for this one
+            len = fetchBinStream.bytesAvailable;
             if (len)
             {
                 fetchBinStream.readBytes(_resource, _resource.length, len);
