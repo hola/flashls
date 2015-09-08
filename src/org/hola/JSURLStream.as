@@ -206,7 +206,7 @@ package org.hola {
             }
         }
 
-        public static function hola_onFragmentData(o : Object) : void{
+        private static function hola_onFragmentData(o : Object) : void{
             var stream : JSURLStream;
             try {
                 if (!(stream = reqs[o.req_id]))

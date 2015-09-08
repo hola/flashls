@@ -32,8 +32,7 @@ package org.hola {
             var stream:URLStream = new URLStream();
             stream.load(req);
             req_list[id] = {id: id, stream: stream,
-                jsurlstream_req_id: o.jsurlstream_req_id,
-                direct_progress: o.direct_progress};
+                jsurlstream_req_id: o.jsurlstream_req_id};
             stream.addEventListener(Event.OPEN, streamOpen);
             stream.addEventListener(ProgressEvent.PROGRESS, streamProgress);
             stream.addEventListener(HTTPStatusEvent.HTTP_STATUS,
@@ -95,11 +94,6 @@ package org.hola {
                 req.prevJSProgress = req.bytesLoaded;
                 jsPostMessage('holaflash.streamProgress', {id: req.id,
                     bytesLoaded: e.bytesLoaded, bytesTotal: e.bytesTotal});
-            }
-            if (req.direct_progress)
-            {
-                JSURLStream.hola_onFragmentData({req_id: req.jsurlstream_req_id,
-                    fetchBinReqId: req.id});
             }
         }
         public static function streamHttpStatus(e:HTTPStatusEvent):void{
