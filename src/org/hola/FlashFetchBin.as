@@ -8,8 +8,8 @@ package org.hola {
     import org.hola.ZExternalInterface;
 
     public class FlashFetchBin {
-        public static var inited:Boolean = false;
-        public static var free_id:Number = 0;
+        private static var inited:Boolean = false;
+        private static var free_id:Number = 0;
         public static var req_list:Object = {};
         public static function init():Boolean{
             if (inited)
@@ -24,7 +24,7 @@ package org.hola {
             inited = true;
             return inited;
         }
-        public static function hola_fetchBin(o:Object):Object{
+        private static function hola_fetchBin(o:Object):Object{
             var id:String = 'fetch_bin_'+free_id;
             free_id++;
             var url:String = o.url;
@@ -53,14 +53,14 @@ package org.hola {
                 clearTimeout(req.timer);
             delete req_list[id];
         }
-        public static function hola_fetchBinAbort(id:String):void{
+        private static function hola_fetchBinAbort(id:String):void{
             var req:Object = req_list[id];
             if (!req)
                 return;
             if (req.stream.connected)
                 req.stream.close();
         }
-        public static function getReqFromStream(stream:Object):Object{
+        private static function getReqFromStream(stream:Object):Object{
             // XXX arik/bahaa: implement without loop
             for (var n:String in req_list)
             {
@@ -70,19 +70,19 @@ package org.hola {
             return null;
         }
         // XXX arik/bahaa: mv to org.hola.util
-        public static function jsPostMessage(id:String, data:Object):void{
+        private static function jsPostMessage(id:String, data:Object):void{
             if (!ZExternalInterface.avail())
                 return;
             ExternalInterface.call('window.postMessage',
                 {id: id, ts: new Date().getTime(), data: data}, '*');
         }
-        public static function streamOpen(e:Event):void{
+        private static function streamOpen(e:Event):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
                 return ZErr.log('req not found streamOpen');
             jsPostMessage('holaflash.streamOpen', {id: req.id});
         }
-        public static function streamProgress(e:ProgressEvent):void{
+        private static function streamProgress(e:ProgressEvent):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
                 return ZErr.log('req not found streamProgress');
@@ -96,21 +96,21 @@ package org.hola {
                     bytesLoaded: e.bytesLoaded, bytesTotal: e.bytesTotal});
             }
         }
-        public static function streamHttpStatus(e:HTTPStatusEvent):void{
+        private static function streamHttpStatus(e:HTTPStatusEvent):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
                 return ZErr.log('req not found streamHttpStatus');
             jsPostMessage('holaflash.streamHttpStatus', {id: req.id,
                 status: e.status});
         }
-        public static function streamComplete(e:Event):void{
+        private static function streamComplete(e:Event):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
                 return ZErr.log('req not found streamComplete');
             jsPostMessage('holaflash.streamComplete', {id: req.id,
                 bytesTotal: req.bytesTotal});
         }
-        public static function streamError(e:ErrorEvent):void{
+        private static function streamError(e:ErrorEvent):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
                 return ZErr.log('req not found streamError');
