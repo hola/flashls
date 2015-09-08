@@ -11,6 +11,7 @@ package org.hola {
         private static var inited:Boolean = false;
         private static var free_id:Number = 0;
         public static var req_list:Object = {};
+
         public static function init():Boolean{
             if (inited)
                 return inited;
@@ -24,6 +25,7 @@ package org.hola {
             inited = true;
             return inited;
         }
+
         private static function hola_fetchBin(o:Object):Object{
             var id:String = 'fetch_bin_'+free_id;
             free_id++;
@@ -43,6 +45,7 @@ package org.hola {
                 streamError);
             return {id: id, url: url};
         }
+
         public static function hola_fetchBinRemove(id:String):void{
             var req:Object = req_list[id];
             if (!req)
@@ -53,6 +56,7 @@ package org.hola {
                 clearTimeout(req.timer);
             delete req_list[id];
         }
+
         private static function hola_fetchBinAbort(id:String):void{
             var req:Object = req_list[id];
             if (!req)
@@ -60,6 +64,7 @@ package org.hola {
             if (req.stream.connected)
                 req.stream.close();
         }
+
         private static function getReqFromStream(stream:Object):Object{
             // XXX arik/bahaa: implement without loop
             for (var n:String in req_list)
@@ -69,6 +74,7 @@ package org.hola {
             }
             return null;
         }
+
         // XXX arik/bahaa: mv to org.hola.util
         private static function jsPostMessage(id:String, data:Object):void{
             if (!ZExternalInterface.avail())
@@ -76,12 +82,14 @@ package org.hola {
             ExternalInterface.call('window.postMessage',
                 {id: id, ts: new Date().getTime(), data: data}, '*');
         }
+
         private static function streamOpen(e:Event):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
                 return ZErr.log('req not found streamOpen');
             jsPostMessage('holaflash.streamOpen', {id: req.id});
         }
+
         private static function streamProgress(e:ProgressEvent):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
@@ -96,6 +104,7 @@ package org.hola {
                     bytesLoaded: e.bytesLoaded, bytesTotal: e.bytesTotal});
             }
         }
+
         private static function streamHttpStatus(e:HTTPStatusEvent):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
@@ -103,6 +112,7 @@ package org.hola {
             jsPostMessage('holaflash.streamHttpStatus', {id: req.id,
                 status: e.status});
         }
+
         private static function streamComplete(e:Event):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
@@ -110,6 +120,7 @@ package org.hola {
             jsPostMessage('holaflash.streamComplete', {id: req.id,
                 bytesTotal: req.bytesTotal});
         }
+
         private static function streamError(e:ErrorEvent):void{
             var req:Object = getReqFromStream(e.target);
             if (!req)
@@ -117,6 +128,7 @@ package org.hola {
             jsPostMessage('holaflash.streamError', {id: req.id});
             hola_fetchBinRemove(req.id);
         }
+
         public static function consumeDataTimeout(id:String,
             cb:Function, ms:Number, ctx:Object):void{
             var req:Object = req_list[id];
