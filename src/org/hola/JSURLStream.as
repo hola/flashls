@@ -4,12 +4,10 @@
 package org.hola {
     import flash.events.*;
     import flash.external.ExternalInterface;
-    import org.hola.ZExternalInterface;
     import flash.net.URLRequest;
     import flash.net.URLStream;
     import flash.utils.ByteArray;
-    import flash.utils.getTimer;
-    import flash.utils.Timer;
+    import org.hola.ZExternalInterface;
     import org.hola.ZErr;
     import org.hola.Base64;
     import org.hola.WorkerUtils;
@@ -36,8 +34,8 @@ package org.hola {
             /* XXX arik: setting this to true will pass js exceptions to
              * as3 and as3 exceptions to js. this may break current customer
              * code
-            ExternalInterface.marshallExceptions = true;
-            */
+             ExternalInterface.marshallExceptions = true;
+             */
             ExternalInterface.addCallback('hola_onFragmentData',
                 hola_onFragmentData);
             js_api_inited = true;
@@ -181,18 +179,13 @@ package org.hola {
             var fetchBinStream : URLStream = o.fetchBinReq.stream;
             _resource = _resource || new ByteArray();
             var prev : Number = _resource.position;
-            var len : Number =
-                Math.min(fetchBinStream.bytesAvailable, 128*1024);
-            // XXX arik: seems that flashls already have timer to process data
-            // so no need for this one
-            len = fetchBinStream.bytesAvailable;
+            var len : Number = fetchBinStream.bytesAvailable;
             if (len)
             {
                 fetchBinStream.readBytes(_resource, _resource.length, len);
                 _resource.position = prev;
-                var finalLength : Number = o.fetchBinReq.bytesTotal;
                 dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false,
-                    false, _resource.length, finalLength));
+                    false, _resource.length, o.fetchBinReq.bytesTotal));
             }
             if (_resource.length < o.fetchBinReq.bytesTotal)
             {
@@ -206,7 +199,7 @@ package org.hola {
             }
         }
 
-        private static function hola_onFragmentData(o : Object) : void{
+        private static function hola_onFragmentData(o : Object) : void {
             var stream : JSURLStream;
             try {
                 if (!(stream = reqs[o.req_id]))
