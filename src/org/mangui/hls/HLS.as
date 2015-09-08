@@ -89,7 +89,6 @@ package org.mangui.hls {
             WorkerUtils.start_worker();
             if (!hola_api_inited && ZExternalInterface.avail())
             {
-                ExternalInterface.call('console.log', 'HLS hola_api_inited');
                 hola_api_inited = true;
                 ExternalInterface.addCallback("hola_hls_call", HLS.hola_hls_call);
                 ExternalInterface.addCallback("hola_version", HLS.hola_version);
@@ -106,7 +105,6 @@ package org.mangui.hls {
             g_curr_hls = this;
             if (ZExternalInterface.avail())
             {
-                ExternalInterface.call('console.log', 'HLS new ', g_curr_id);
                 ExternalInterface.call('window.postMessage',
                     {id: 'flashls.hlsNew', hls_id: g_curr_id}, '*');
             }
