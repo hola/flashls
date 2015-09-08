@@ -15,7 +15,7 @@ package org.hola {
             if (inited)
                 return inited;
             if (!ZExternalInterface.avail())
-                return false
+                return false;
             ExternalInterface.addCallback('hola_fetchBin', hola_fetchBin);
             ExternalInterface.addCallback('hola_fetchBinRemove',
                 hola_fetchBinRemove);
@@ -53,7 +53,7 @@ package org.hola {
                 clearTimeout(req.timer);
             delete req_list[id];
         }
-         public static function hola_fetchBinAbort(id:String):void{
+        public static function hola_fetchBinAbort(id:String):void{
             var req:Object = req_list[id];
             if (!req)
                 return;
