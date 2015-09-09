@@ -125,7 +125,9 @@ package org.hola {
             if (!HSettings.use_worker)
                 return on_decoded_data(Base64.decode_str(str));
             var data : ByteArray = new ByteArray();
+            CONFIG::HAVE_WORKER {
             data.shareable = true;
+            }
             data.writeUTFBytes(str);
             WorkerUtils.send({cmd: "b64.decode", id: _req_id});
             WorkerUtils.send(data);
