@@ -105,7 +105,7 @@ package org.hola {
                 }
                 WorkerUtils.removeEventListener(HEvent.WORKER_MESSAGE, onmsg);
             }
-            _hola_managed = HSettings.enabled && ZExternalInterface.avail();
+            _hola_managed = HSettings.hls_mode && ZExternalInterface.avail();
             req_count++;
             _req_id = 'req'+req_count;
             if (!_hola_managed)

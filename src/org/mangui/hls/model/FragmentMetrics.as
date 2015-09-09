@@ -32,7 +32,7 @@ package org.mangui.hls.model {
         }
 
         public function get bandwidth() : int {
-            if (HSettings.enabled && FragmentLoader.g_bandwidth)
+            if (HSettings.hls_mode && FragmentLoader.g_bandwidth)
                 return FragmentLoader.g_bandwidth;
             return(Math.round(size * 8000 / (parsing_end_time - loading_request_time)));
         }
