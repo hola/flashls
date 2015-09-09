@@ -28,6 +28,8 @@ package org.hola {
         public function JSURLStream(){
             _hola_managed = HSettings.hls_mode && ZExternalInterface.avail();
             addEventListener(Event.OPEN, onopen);
+            if (HSettings.use_worker)
+                WorkerUtils.addEventListener(HEvent.WORKER_MESSAGE, onmsg);
             super();
             if (!ZExternalInterface.avail() || js_api_inited)
                 return;
@@ -81,14 +83,12 @@ package org.hola {
         }
 
         override public function close() : void {
-            if (_hola_managed)
-            {
-                if (reqs[_req_id])
-                {
-                    _delete();
-                    _trigger('abortFragment', {req_id: _req_id});
-                }
+            if (HSettings.use_worker)
                 WorkerUtils.removeEventListener(HEvent.WORKER_MESSAGE, onmsg);
+            if (_hola_managed && reqs[_req_id])
+            {
+                _delete();
+                _trigger('abortFragment', {req_id: _req_id});
             }
             if (super.connected)
                 super.close();
@@ -96,21 +96,16 @@ package org.hola {
         }
 
         override public function load(request : URLRequest) : void {
-            if (_hola_managed)
+            if (_hola_managed && reqs[_req_id])
             {
-                if (reqs[_req_id])
-                {
-                    _delete();
-                    _trigger('abortFragment', {req_id: _req_id});
-                }
-                WorkerUtils.removeEventListener(HEvent.WORKER_MESSAGE, onmsg);
+                _delete();
+                _trigger('abortFragment', {req_id: _req_id});
             }
             _hola_managed = HSettings.hls_mode && ZExternalInterface.avail();
             req_count++;
             _req_id = 'req'+req_count;
             if (!_hola_managed)
                 return super.load(request);
-            WorkerUtils.addEventListener(HEvent.WORKER_MESSAGE, onmsg);
             reqs[_req_id] = this;
             _resource = new ByteArray();
             _trigger('requestFragment', {url: request.url, req_id: _req_id});
