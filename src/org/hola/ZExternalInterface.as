@@ -5,6 +5,7 @@ package org.hola
     {
         private static var is_avail:Boolean = false;
         private static var inited:Boolean = false;
+
         public static function avail():Boolean{
             if (!inited)
             {
