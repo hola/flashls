@@ -26,7 +26,7 @@ package org.hola {
         private var _req_id : String;
 
         public function JSURLStream(){
-            _hola_managed = HSettings.enabled && ZExternalInterface.avail();
+            _hola_managed = HSettings.hls_mode && ZExternalInterface.avail();
             addEventListener(Event.OPEN, onopen);
             super();
             if (!ZExternalInterface.avail() || js_api_inited)
@@ -179,7 +179,8 @@ package org.hola {
             var fetchBinStream : URLStream = o.fetchBinReq.stream;
             _resource = _resource || new ByteArray();
             var prev : Number = _resource.position;
-            var len : Number = fetchBinStream.bytesAvailable;
+            var len : Number = Math.min(fetchBinStream.bytesAvailable,
+                HSettings.fetch_bin_chunk_size);
             if (len)
             {
                 fetchBinStream.readBytes(_resource, _resource.length, len);
@@ -190,7 +191,7 @@ package org.hola {
             if (_resource.length < o.fetchBinReq.bytesTotal)
             {
                 FlashFetchBin.consumeDataTimeout(o.fetchBinReqId,
-                    _fetch_bin, 20, o);
+                    _fetch_bin, HSettings.fetch_bin_delay, o);
             }
             else
             {
