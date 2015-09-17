@@ -90,15 +90,24 @@ package org.mangui.hls {
             if (!hola_api_inited && ZExternalInterface.avail())
             {
                 hola_api_inited = true;
-                ExternalInterface.addCallback("hola_hls_call", HLS.hola_hls_call);
-                ExternalInterface.addCallback("hola_version", HLS.hola_version);
-                ExternalInterface.addCallback("hola_hls_get_video_url", HLS.hola_hls_get_video_url);
-                ExternalInterface.addCallback("hola_hls_get_position", HLS.hola_hls_get_position);
-                ExternalInterface.addCallback("hola_hls_get_duration", HLS.hola_hls_get_duration);
-                ExternalInterface.addCallback("hola_hls_get_buffer_sec", HLS.hola_hls_get_buffer_sec);
-                ExternalInterface.addCallback("hola_hls_get_state", HLS.hola_hls_get_state);
-                ExternalInterface.addCallback("hola_hls_get_levels", HLS.hola_hls_get_levels);
-                ExternalInterface.addCallback("hola_hls_get_level", HLS.hola_hls_get_level);
+                ExternalInterface.addCallback("hola_hls_call",
+                    HLS.hola_hls_call);
+                ExternalInterface.addCallback("hola_version",
+                    HLS.hola_version);
+                ExternalInterface.addCallback("hola_hls_get_video_url",
+                    HLS.hola_hls_get_video_url);
+                ExternalInterface.addCallback("hola_hls_get_position",
+                    HLS.hola_hls_get_position);
+                ExternalInterface.addCallback("hola_hls_get_duration",
+                    HLS.hola_hls_get_duration);
+                ExternalInterface.addCallback("hola_hls_get_buffer_sec",
+                    HLS.hola_hls_get_buffer_sec);
+                ExternalInterface.addCallback("hola_hls_get_state",
+                    HLS.hola_hls_get_state);
+                ExternalInterface.addCallback("hola_hls_get_levels",
+                    HLS.hola_hls_get_levels);
+                ExternalInterface.addCallback("hola_hls_get_level",
+                    HLS.hola_hls_get_level);
                 FlashFetchBin.init();
             }
             g_curr_id++;
