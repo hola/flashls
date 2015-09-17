@@ -12,16 +12,6 @@ package org.hola {
         private static var _dispatcher : EventDispatcher =
             new EventDispatcher();
         CONFIG::HAVE_WORKER {
-        CONFIG::DEBUG {
-        [Embed(source="../../../bin/debug/HLSWorker.swf",
-            mimeType="application/octet-stream")]
-        private static var WORKER_SWF : Class;
-        }
-        CONFIG::RELEASE {
-        [Embed(source="../../../bin/release/HLSWorker.swf",
-            mimeType="application/octet-stream")]
-        private static var WORKER_SWF : Class;
-        }
         private static var _ochan : MessageChannel;
         private static var _ichan : MessageChannel;
         private static var _worker : Worker;
@@ -31,11 +21,11 @@ package org.hola {
         }
         }
 
-        public static function start_worker() : void {
+        public static function start_worker(WorkerSWF : Class) : void {
             CONFIG::HAVE_WORKER {
             if (_worker || !Worker.isSupported)
                 return;
-            _worker = WorkerDomain.current.createWorker(new WORKER_SWF());
+            _worker = WorkerDomain.current.createWorker(new WorkerSWF());
             _ochan = Worker.current.createMessageChannel(_worker);
             _ichan = _worker.createMessageChannel(Worker.current);
             _ichan.addEventListener(Event.CHANNEL_MESSAGE, onmsg);
