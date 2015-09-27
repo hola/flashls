@@ -5,7 +5,7 @@ fi
 
 cd $(dirname $(realpath $0))
 
-HOLA_VERSION="0.0.1"
+HOLA_VERSION="0.0.2"
 
 _OPT_DEBUG="-use-network=false \
     -debug=true \

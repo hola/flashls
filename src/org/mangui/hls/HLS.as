@@ -21,8 +21,7 @@ package org.mangui.hls {
     CONFIG::HAVE_WORKER {
     import org.hola.WorkerUtils;
     }
-    import org.hola.HSettings;
-    import org.hola.FlashFetchBin;
+    import org.hola.JSAPI;
     import flash.external.ExternalInterface;
     import org.hola.ZExternalInterface;
 
@@ -99,7 +98,7 @@ package org.mangui.hls {
 
         /** Create and connect all components. **/
         public function HLS() {
-            HSettings.init();
+            JSAPI.init();
             CONFIG::HAVE_WORKER {
             WorkerUtils.start_worker(WORKER_SWF);
             }
@@ -124,7 +123,6 @@ package org.mangui.hls {
                     HLS.hola_hls_get_levels);
                 ExternalInterface.addCallback("hola_hls_get_level",
                     HLS.hola_hls_get_level);
-                FlashFetchBin.init();
             }
             g_curr_id++;
             g_curr_hls = this;
