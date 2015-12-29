@@ -44,9 +44,6 @@
             _data = null;
         }
 
-        public function close() : void {
-        }
-
         public function audio_expected() : Boolean {
             return true;
         }

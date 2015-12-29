@@ -460,7 +460,7 @@ package org.mangui.chromeless {
 
             var autoLoadUrl : String = root.loaderInfo.parameters.url as String;
             if (autoLoadUrl != null) {
-                ZErr.log('autoLoadUrl', autoLoadUrl);
+                ZErr.notice('autoLoadUrl', autoLoadUrl);
                 _autoLoad = true;
                 _load(autoLoadUrl);
             }

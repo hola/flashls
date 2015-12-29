@@ -5,46 +5,11 @@ fi
 
 cd $(dirname $(realpath $0))
 
-HOLA_VERSION="0.0.3"
-
-_OPT_DEBUG="-use-network=false \
-    -debug=true \
+HOLA_VERSION="0.0.6"
+OPT_RELEASE="-use-network=false \
     -optimize=true \
-    -define=CONFIG::DEBUG,true \
-    -define=CONFIG::RELEASE,false \
-    -define=CONFIG::LOGGING,true"
-OPT_DEBUG="$_OPT_DEBUG -define=CONFIG::HAVE_WORKER,false"
-OPT_DEBUG_WORKERS="$_OPT_DEBUG -define=CONFIG::HAVE_WORKER,true"
-
-_OPT_RELEASE="-use-network=false \
-    -optimize=true \
-    -define=CONFIG::DEBUG,false \
-    -define=CONFIG::RELEASE,true \
     -define=CONFIG::LOGGING,false"
-OPT_RELEASE="$_OPT_RELEASE -define=CONFIG::HAVE_WORKER,false"
-OPT_RELEASE_WORKERS="$_OPT_RELEASE -define=CONFIG::HAVE_WORKER,true"
-
-echo "Compiling bin/debug/HLSWorker.swf"
-$FLEXPATH/bin/mxmlc ../src/org/mangui/hls/HLSWorker.as \
-    -source-path ../src \
-    -o ../bin/debug/HLSWorker.swf \
-    $OPT_DEBUG_WORKERS \
-    -library-path+=../lib/hola_as3/debug/hola_as3_workers_$HOLA_VERSION.swc \
-    -swf-version=18 \
-    -default-size 480 270 \
-    -default-background-color=0x000000
-./add-opt-in.py ../bin/debug/HLSWorker.swf
-
-echo "Compiling bin/release/HLSWorker.swf"
-$FLEXPATH/bin/mxmlc ../src/org/mangui/hls/HLSWorker.as \
-    -source-path ../src \
-    -o ../bin/release/HLSWorker.swf \
-    $OPT_RELEASE_WORKERS \
-    -library-path+=../lib/hola_as3/release/hola_as3_workers_$HOLA_VERSION.swc \
-    -swf-version=18 \
-    -default-size 480 270 \
-    -default-background-color=0x000000
-./add-opt-in.py ../bin/release/HLSWorker.swf
+OPT_DEBUG="$OPT_RELEASE -debug=true"
 
 echo "Compiling bin/debug/flashls.swc"
 $FLEXPATH/bin/compc \
@@ -61,22 +26,6 @@ $FLEXPATH/bin/compc \
     -library-path+=../lib/hola_as3/release/hola_as3_$HOLA_VERSION.swc \
     -output ../bin/release/flashls.swc \
     -swf-version=15
-
-echo "Compiling bin/debug/flashls_workers.swc"
-$FLEXPATH/bin/compc \
-    $OPT_DEBUG_WORKERS \
-    -include-sources ../src/org/mangui/hls \
-    -library-path+=../lib/hola_as3/debug/hola_as3_workers_$HOLA_VERSION.swc \
-    -output ../bin/debug/flashls_workers.swc \
-    -swf-version=18
-
-echo "Compiling bin/release/flashls_workers.swc"
-$FLEXPATH/bin/compc \
-    $OPT_RELEASE_WORKERS \
-    -include-sources ../src/org/mangui/hls \
-    -library-path+=../lib/hola_as3/release/hola_as3_workers_$HOLA_VERSION.swc \
-    -output ../bin/release/flashls_workers.swc \
-    -swf-version=18
 
 echo "Compiling bin/release/flashlsChromeless.swf"
 $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
@@ -101,30 +50,6 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
     -default-size 480 270 \
     -default-background-color=0x000000
 ./add-opt-in.py ../bin/debug/flashlsChromeless.swf
-
-echo "Compiling bin/release/flashlsChromelessWorkers.swf"
-$FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
-    -source-path ../src \
-    -o ../bin/release/flashlsChromelessWorkers.swf \
-    $OPT_RELEASE_WORKERS \
-    -library-path+=../lib/blooddy_crypto.swc \
-    -library-path+=../lib/hola_as3/release/hola_as3_workers_$HOLA_VERSION.swc \
-    -swf-version=18 \
-    -default-size 480 270 \
-    -default-background-color=0x000000
-./add-opt-in.py ../bin/release/flashlsChromelessWorkers.swf
-
-echo "Compiling bin/debug/flashlsChromelessWorkers.swf"
-$FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
-    -source-path ../src \
-    -o ../bin/debug/flashlsChromelessWorkers.swf \
-    $OPT_DEBUG_WORKERS \
-    -library-path+=../lib/blooddy_crypto.swc \
-    -library-path+=../lib/hola_as3/debug/hola_as3_workers_$HOLA_VERSION.swc \
-    -swf-version=18 \
-    -default-size 480 270 \
-    -default-background-color=0x000000
-./add-opt-in.py ../bin/debug/flashlsChromelessWorkers.swf
 
 #echo "Compiling flashlsBasic.swf"
 #$FLEXPATH/bin/mxmlc ../src/org/mangui/basic/Player.as \

@@ -144,9 +144,6 @@
             _displayObject.removeEventListener(Event.ENTER_FRAME, _parseTimer);
         }
 
-        public function close() : void {
-        }
-
         public function notifycomplete() : void {
             _data_complete = true;
         }

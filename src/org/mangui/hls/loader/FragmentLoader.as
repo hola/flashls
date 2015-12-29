@@ -544,7 +544,6 @@
 
             if (_demux) {
                 _demux.cancel();
-                _demux.close();
                 _demux = null;
             }
 
@@ -735,8 +734,6 @@
                 _keystreamloader.addEventListener(Event.COMPLETE, _keyLoadCompleteHandler);
             }
             if (_hasDiscontinuity || _switchlevel) {
-                if (_demux)
-                    _demux.close();
                 _demux = null;
             }
             frag.metrics.loading_request_time = getTimer();
@@ -935,32 +932,12 @@
         }
 
         /** triggered when demux has completed fragment parsing **/
-        private function _fragParsingCompleteHandler(o : Object = null,
-            tags : Vector.<FLVTag> = null) : void
+        private function _fragParsingCompleteHandler() : void
         {
             if (_loading_state == LOADING_IDLE)
                 return;
             var hlsError : HLSError;
             var fragData : FragmentData = _frag_current.data;
-            if (HSettings.use_worker)
-            {
-                fragData.pts_min_audio = o.pts_min_audio;
-                fragData.pts_max_audio = o.pts_max_audio;
-                fragData.pts_min_video = o.pts_min_video;
-                fragData.pts_max_video = o.pts_max_video;
-                fragData.audio_found = o.audio_found;
-                fragData.video_found = o.video_found;
-                fragData.tags_pts_min_audio = o.tags_pts_min_audio;
-                fragData.tags_pts_max_audio = o.tags_pts_max_audio;
-                fragData.tags_pts_min_video = o.tags_pts_min_video;
-                fragData.tags_pts_max_video = o.tags_pts_max_video;
-                fragData.tags_audio_found = o.tags_audio_found;
-                fragData.tags_video_found = o.tags_video_found;
-                fragData.video_width = o.video_width;
-                fragData.video_height = o.video_height;
-                for each (var tag : FLVTag in tags)
-                    fragData.tags.push(tag);
-            }
             if (!fragData.audio_found && !fragData.video_found) {
                 hlsError = new HLSError(HLSError.FRAGMENT_PARSING_ERROR, _frag_current.url, "error parsing fragment, no tag found");
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));

@@ -2,8 +2,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package org.mangui.hls.utils {
-    import org.hola.HSettings;
-
     public class PTS {
         /* find PTS value nearest a given reference PTS value 
          * 
@@ -17,8 +15,6 @@ package org.mangui.hls.utils {
          * this will avoid PTS looping issues.  
          */
         public static function normalize(reference : Number, value : Number) : Number {
-            if (HSettings.use_worker) // XXX bahaa: hack
-                return value<0 ? value+47721859 : value;
             var offset : Number;
             if (reference < value) {
                 // - 2^33/90

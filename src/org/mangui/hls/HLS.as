@@ -18,9 +18,6 @@ package org.mangui.hls {
     import org.mangui.hls.controller.AudioTrackController;
     import org.mangui.hls.loader.FragmentLoader;
     import org.mangui.hls.stream.HLSNetStream;
-    CONFIG::HAVE_WORKER {
-    import org.hola.WorkerUtils;
-    }
     import org.hola.JSAPI;
     import flash.external.ExternalInterface;
     import org.hola.ZExternalInterface;
@@ -30,18 +27,6 @@ package org.mangui.hls {
     }
     /** Class that manages the streaming process. **/
     public class HLS extends EventDispatcher {
-        CONFIG::HAVE_WORKER {
-        CONFIG::DEBUG {
-        [Embed(source="../../../../bin/debug/HLSWorker.swf",
-            mimeType="application/octet-stream")]
-        private static var WORKER_SWF : Class;
-        }
-        CONFIG::RELEASE {
-        [Embed(source="../../../../bin/release/HLSWorker.swf",
-            mimeType="application/octet-stream")]
-        private static var WORKER_SWF : Class;
-        }
-        }
         public var _fragmentLoader : FragmentLoader;
         private var _manifestLoader : ManifestLoader;
         private var _audioTrackController : AudioTrackController;
@@ -60,8 +45,7 @@ package org.mangui.hls {
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.16',
-                have_worker: CONFIG::HAVE_WORKER
+                patch_version: '1.0.17'
             };
         }
         private static function hola_hls_get_video_url() : String {
@@ -99,9 +83,6 @@ package org.mangui.hls {
         /** Create and connect all components. **/
         public function HLS() {
             JSAPI.init();
-            CONFIG::HAVE_WORKER {
-            WorkerUtils.start_worker(WORKER_SWF);
-            }
             if (!hola_api_inited && ZExternalInterface.avail())
             {
                 hola_api_inited = true;

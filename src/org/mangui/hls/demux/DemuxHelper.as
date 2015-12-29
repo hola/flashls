@@ -36,11 +36,6 @@
                 CONFIG::LOGGING {
                     Log.debug("TS match + H264 signaled in Manifest, use TS demuxer");
                 }
-                if (HSettings.use_worker)
-                {
-                    return new TSDemuxer2(displayObject, audioselect, progress,
-                        complete, videometadata);
-                }
                 return new TSDemuxer(displayObject, audioselect, progress, complete, videometadata);
             } else if (aac_match && level.codec_aac) {
                 CONFIG::LOGGING {
@@ -57,11 +52,6 @@
             } else if (mp3_match) {
                 return new MP3Demuxer(audioselect, progress, complete);
             } else if (ts_match) {
-                if (HSettings.use_worker)
-                {
-                    return new TSDemuxer2(displayObject, audioselect, progress,
-                        complete, videometadata);
-                }
                 return new TSDemuxer(displayObject, audioselect, progress, complete, videometadata);
             } else {
                 CONFIG::LOGGING {
