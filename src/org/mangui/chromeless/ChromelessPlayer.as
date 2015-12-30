@@ -25,6 +25,7 @@ package org.mangui.chromeless {
     import org.mangui.hls.utils.JSURLStream;
     import org.mangui.hls.utils.Log;
     import org.mangui.hls.utils.ScaleVideo;
+    import org.hola.ZErr;
 
     // import com.sociodox.theminer.*;
     public class ChromelessPlayer extends Sprite {
@@ -532,6 +533,7 @@ package org.mangui.chromeless {
 
             var autoLoadUrl : String = root.loaderInfo.parameters.url as String;
             if (autoLoadUrl != null) {
+                ZErr.notice('autoLoadUrl', autoLoadUrl);
                 _autoLoad = true;
                 _load(autoLoadUrl);
             }
