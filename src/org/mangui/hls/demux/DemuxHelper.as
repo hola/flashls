@@ -11,10 +11,7 @@
         import org.mangui.hls.utils.Log;
     }
     public class DemuxHelper {
-        public static function probe(data : ByteArray, level : Level,
-            displayObject : DisplayObject, audioselect : Function,
-            progress : Function, complete : Function, videometadata : Function) : Demuxer
-        {
+        public static function probe(data : ByteArray, level : Level, displayObject : DisplayObject, audioselect : Function, progress : Function, complete : Function, videometadata : Function) : Demuxer {
             data.position = 0;
             CONFIG::LOGGING {
                 Log.debug("probe fragment type");

@@ -18,7 +18,6 @@ package org.mangui.chromeless {
     import flash.display.*;
     import flash.events.*;
     import flash.external.ExternalInterface;
-    import org.hola.ZExternalInterface;
     import flash.geom.Rectangle;
     import flash.media.Video;
     import flash.media.SoundTransform;
@@ -51,12 +50,11 @@ package org.mangui.chromeless {
             _setupSheet();
             _setupExternalGetters();
             _setupExternalCallers();
+
             setTimeout(_pingJavascript, 50);
         };
 
         protected function _setupExternalGetters() : void {
-            if (!ZExternalInterface.avail())
-                return;
             ExternalInterface.addCallback("getLevel", _getLevel);
             ExternalInterface.addCallback("getPlaybackLevel", _getPlaybackLevel);
             ExternalInterface.addCallback("getLevels", _getLevels);
@@ -84,8 +82,6 @@ package org.mangui.chromeless {
         };
 
         protected function _setupExternalCallers() : void {
-            if (!ZExternalInterface.avail())
-                return;
             ExternalInterface.addCallback("playerLoad", _load);
             ExternalInterface.addCallback("playerPlay", _play);
             ExternalInterface.addCallback("playerPause", _pause);
@@ -129,33 +125,31 @@ package org.mangui.chromeless {
 
         /** Notify javascript the framework is ready. **/
         protected function _pingJavascript() : void {
-            if (!ZExternalInterface.avail())
-                return;
             ExternalInterface.call("onHLSReady", ExternalInterface.objectID);
         };
-        
+
         /** Forward events from the framework. **/
         protected function _completeHandler(event : HLSEvent) : void {
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onComplete");
             }
         };
 
         protected function _errorHandler(event : HLSEvent) : void {
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 var hlsError : HLSError = event.error;
                 ExternalInterface.call("onError", hlsError.code, hlsError.url, hlsError.msg);
             }
         };
 
         protected function _fragmentLoadedHandler(event : HLSEvent) : void {
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onFragmentLoaded", event.loadMetrics);
             }
         };
 
         protected function _fragmentPlayingHandler(event : HLSEvent) : void {
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onFragmentPlaying", event.playMetrics);
             }
         };
@@ -167,7 +161,7 @@ package org.mangui.chromeless {
                 _play(-1);
             }
 
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onManifest", _duration);
             }
         };
@@ -175,7 +169,7 @@ package org.mangui.chromeless {
         protected function _mediaTimeHandler(event : HLSEvent) : void {
             _duration = event.mediatime.duration;
             _media_position = event.mediatime.position;
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onPosition", event.mediatime);
             }
 
@@ -188,7 +182,7 @@ package org.mangui.chromeless {
                     _videoHeight = videoHeight;
                     _videoWidth = videoWidth;
                     _resize();
-                    if (ZExternalInterface.avail()) {
+                    if (ExternalInterface.available) {
                         ExternalInterface.call("onVideoSize", _videoWidth, _videoHeight);
                     }
                 }
@@ -196,25 +190,25 @@ package org.mangui.chromeless {
         };
 
         protected function _stateHandler(event : HLSEvent) : void {
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onState", event.state);
             }
         };
 
         protected function _levelSwitchHandler(event : HLSEvent) : void {
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onSwitch", event.level);
             }
         };
 
         protected function _audioTracksListChange(event : HLSEvent) : void {
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onAudioTracksListChange", _getAudioTrackList());
             }
         }
 
         protected function _audioTrackChange(event : HLSEvent) : void {
-            if (ZExternalInterface.avail()) {
+            if (ExternalInterface.available) {
                 ExternalInterface.call("onAudioTrackChange", event.audioTrack);
             }
         }

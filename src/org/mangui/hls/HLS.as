@@ -1,7 +1,7 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-package org.mangui.hls {
+ package org.mangui.hls {
     import org.mangui.hls.model.AudioTrack;
 
     import flash.display.Stage;
@@ -318,5 +318,6 @@ package org.mangui.hls {
         public function get URLstream() : Class {
             return _hlsURLStream;
         }
-    };
+    }
+    ;
 }
