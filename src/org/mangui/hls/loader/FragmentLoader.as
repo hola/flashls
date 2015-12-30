@@ -28,7 +28,6 @@
     import flash.net.*;
     import flash.utils.ByteArray;
     import flash.utils.Timer;
-    import flash.utils.setTimeout;
     import flash.external.ExternalInterface;
     import org.hola.ZExternalInterface;
     
