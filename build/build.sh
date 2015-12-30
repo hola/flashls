@@ -6,10 +6,16 @@ fi
 cd $(dirname $(realpath $0))
 
 HOLA_VERSION="0.0.6"
+
+OPT_DEBUG="-use-network=false \
+    -compiler.debug \
+    -library-path+=../lib/blooddy_crypto.swc \
+    -define=CONFIG::LOGGING,true"
+
 OPT_RELEASE="-use-network=false \
     -optimize=true \
+    -library-path+=../lib/blooddy_crypto.swc \
     -define=CONFIG::LOGGING,false"
-OPT_DEBUG="$OPT_RELEASE -debug=true"
 
 echo "Compiling bin/debug/flashls.swc"
 $FLEXPATH/bin/compc \
@@ -17,7 +23,7 @@ $FLEXPATH/bin/compc \
     -include-sources ../src/org/mangui/hls \
     -library-path+=../lib/hola_as3/debug/hola_as3_$HOLA_VERSION.swc \
     -output ../bin/debug/flashls.swc \
-    -swf-version=15
+    -target-player="11.1"
 
 echo "Compiling bin/release/flashls.swc"
 $FLEXPATH/bin/compc \
@@ -25,16 +31,15 @@ $FLEXPATH/bin/compc \
     -include-sources ../src/org/mangui/hls \
     -library-path+=../lib/hola_as3/release/hola_as3_$HOLA_VERSION.swc \
     -output ../bin/release/flashls.swc \
-    -swf-version=15
+    -target-player="11.1"
 
 echo "Compiling bin/release/flashlsChromeless.swf"
 $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
     -source-path ../src \
     -o ../bin/release/flashlsChromeless.swf \
     $OPT_RELEASE \
-    -library-path+=../lib/blooddy_crypto.swc \
     -library-path+=../lib/hola_as3/release/hola_as3_$HOLA_VERSION.swc \
-    -swf-version=15 \
+    -target-player="11.1" \
     -default-size 480 270 \
     -default-background-color=0x000000
 ./add-opt-in.py ../bin/release/flashlsChromeless.swf
@@ -44,9 +49,8 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
     -source-path ../src \
     -o ../bin/debug/flashlsChromeless.swf \
     $OPT_DEBUG \
-    -library-path+=../lib/blooddy_crypto.swc \
     -library-path+=../lib/hola_as3/debug/hola_as3_$HOLA_VERSION.swc \
-    -swf-version=15 \
+    -target-player="11.1" \
     -default-size 480 270 \
     -default-background-color=0x000000
 ./add-opt-in.py ../bin/debug/flashlsChromeless.swf
@@ -56,7 +60,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #   -source-path ../src \
 #   -o ../test/chromeless/flashlsBasic.swf \
 #   $COMMON_OPT \
-#   -swf-version=15 \
+#   -target-player="11.1" \
 #   -default-size 640 480 \
 #   -default-background-color=0x000000
 #
@@ -66,7 +70,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_RELEASE \
 #    -library-path+=../lib/flowplayer \
 #    -load-externs=../lib/flowplayer/flowplayer-classes.xml \
-#    -swf-version=15
+#    -target-player="11.1"
 #./add-opt-in.py ../bin/release/flashlsFlowPlayer.swf
 #
 #echo "Compiling bin/debug/flashlsFlowPlayer.swf"
@@ -75,7 +79,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_DEBUG \
 #    -library-path+=../lib/flowplayer \
 #    -load-externs=../lib/flowplayer/flowplayer-classes.xml \
-#    -swf-version=15
+#    -target-player="11.1"
 #./add-opt-in.py ../bin/debug/flashlsFlowPlayer.swf
 #
 #echo "Compiling bin/release/flashlsOSMF.swf"
@@ -85,7 +89,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_RELEASE \
 #    -library-path+=../lib/osmf \
 #    -load-externs ../lib/osmf/exclude-sources.xml \
-#    -swf-version=15 #-compiler.verbose-stacktraces=true -link-report=../test/osmf/link-report.xml
+#    -target-player="11.1" #-compiler.verbose-stacktraces=true -link-report=../test/osmf/link-report.xml
 #./add-opt-in.py ../bin/release/flashlsOSMF.swf
 #
 #echo "Compiling bin/debug/flashlsOSMF.swf"
@@ -95,7 +99,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_DEBUG \
 #    -library-path+=../lib/osmf \
 #    -load-externs ../lib/osmf/exclude-sources.xml \
-#    -swf-version=15 #-compiler.verbose-stacktraces=true -link-report=../test/osmf/link-report.xml
+#    -target-player="11.1" #-compiler.verbose-stacktraces=true -link-report=../test/osmf/link-report.xml
 #./add-opt-in.py ../bin/debug/flashlsOSMF.swf
 #
 #echo "Compiling bin/release/flashlsOSMF.swc"
@@ -104,7 +108,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_RELEASE \
 #    -library-path+=../bin/release/flashls.swc \
 #    -library-path+=../lib/osmf \
-#    -swf-version=15 \
+#    -target-player="11.1" \
 #    -debug=false \
 #    -external-library-path+=../lib/osmf
 #
@@ -114,7 +118,6 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_DEBUG \
 #    -library-path+=../bin/debug/flashls.swc \
 #    -library-path+=../lib/osmf \
-#    -swf-version=15 \
-#    -debug=false \
+#    -target-player="11.1" \
 #    -external-library-path+=../lib/osmf
 #
