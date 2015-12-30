@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
  package org.mangui.hls.demux {
     import org.mangui.hls.model.Level;
-    import org.hola.HSettings;
 
     import flash.display.DisplayObject;
     import flash.utils.ByteArray;
