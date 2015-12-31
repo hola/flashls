@@ -27,6 +27,8 @@ package org.mangui.hls {
     }
     /** Class that manages the streaming process. **/
     public class HLS extends EventDispatcher {
+        private static var hls_count : Number = 0;
+        public var id : Number;
         private var _levelLoader : LevelLoader;
         private var _altAudioLevelLoader : AltAudioLevelLoader;
         private var _audioTrackController : AudioTrackController;
@@ -46,6 +48,9 @@ package org.mangui.hls {
 
         /** Create and connect all components. **/
         public function HLS() {
+            HLSJS.init();
+            id = ++hls_count;
+            HLSJS.HLSnew(this);
             _levelLoader = new LevelLoader(this);
             _altAudioLevelLoader = new AltAudioLevelLoader(this);
             _audioTrackController = new AudioTrackController(this);
@@ -81,6 +86,7 @@ package org.mangui.hls {
         };
 
         public function dispose() : void {
+            HLSJS.HLSdispose(this);
             this.removeEventListener(HLSEvent.LEVEL_SWITCH, _levelSwitchHandler);
             _levelLoader.dispose();
             _altAudioLevelLoader.dispose();

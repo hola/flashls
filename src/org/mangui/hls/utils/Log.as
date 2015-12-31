@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package org.mangui.hls.utils {
     import flash.external.ExternalInterface;
+    import org.hola.ZExternalInterface;
     
     import org.mangui.hls.HLSSettings;
 
@@ -40,7 +41,7 @@ package org.mangui.hls.utils {
 
         /** Log a message to the console. **/
         private static function outputlog(level : String, message : String) : void {
-            if (ExternalInterface.available)
+            if (ZExternalInterface.avail())
                 ExternalInterface.call('console.log', level + message);
             else trace(level + message);
         }

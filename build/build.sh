@@ -4,7 +4,7 @@ if [ -z "$FLEXPATH" ]; then
 fi
 
 cd $(dirname $(realpath $0))
-HOLA_VERSION="0.0.6"
+HOLA_VERSION="0.0.7"
 
 OPT_DEBUG="-use-network=false \
     -compiler.debug \
@@ -22,7 +22,7 @@ $FLEXPATH/bin/compc \
     -include-sources ../src/org/mangui/hls \
     -library-path+=../lib/hola_as3/debug/hola_as3_$HOLA_VERSION.swc \
     -output ../bin/debug/flashls.swc \
-    -target-player="10.1"
+    -target-player="11.1"
 
 echo "Compiling bin/release/flashls.swc"
 $FLEXPATH/bin/compc \
@@ -30,7 +30,7 @@ $FLEXPATH/bin/compc \
     -include-sources ../src/org/mangui/hls \
     -library-path+=../lib/hola_as3/release/hola_as3_$HOLA_VERSION.swc \
     -output ../bin/release/flashls.swc \
-    -target-player="10.1"
+    -target-player="11.1"
 
 echo "Compiling bin/release/flashlsChromeless.swf"
 $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
@@ -88,7 +88,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_RELEASE \
 #    -library-path+=../lib/osmf \
 #    -load-externs ../lib/osmf/exclude-sources.xml \
-#    -target-player="10.1" #-compiler.verbose-stacktraces=true -link-report=../test/osmf/link-report.xml
+#    -target-player="11.1" #-compiler.verbose-stacktraces=true -link-report=../test/osmf/link-report.xml
 #./add-opt-in.py ../bin/release/flashlsOSMF.swf
 #
 #echo "Compiling bin/debug/flashlsOSMF.swf"
@@ -98,7 +98,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_DEBUG \
 #    -library-path+=../lib/osmf \
 #    -load-externs ../lib/osmf/exclude-sources.xml \
-#    -target-player="10.1" #-compiler.verbose-stacktraces=true -link-report=../test/osmf/link-report.xml
+#    -target-player="11.1" #-compiler.verbose-stacktraces=true -link-report=../test/osmf/link-report.xml
 #./add-opt-in.py ../bin/debug/flashlsOSMF.swf
 #
 #echo "Compiling bin/release/flashlsOSMF.swc"
@@ -107,7 +107,7 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_RELEASE \
 #    -library-path+=../bin/release/flashls.swc \
 #    -library-path+=../lib/osmf \
-#    -target-player="10.1" \
+#    -target-player="11.1" \
 #    -debug=false \
 #    -external-library-path+=../lib/osmf
 #
@@ -117,5 +117,5 @@ $FLEXPATH/bin/mxmlc ../src/org/mangui/chromeless/ChromelessPlayer.as \
 #    $OPT_DEBUG \
 #    -library-path+=../bin/debug/flashls.swc \
 #    -library-path+=../lib/osmf \
-#    -target-player="10.1" \
+#    -target-player="11.1" \
 #    -external-library-path+=../lib/osmf
