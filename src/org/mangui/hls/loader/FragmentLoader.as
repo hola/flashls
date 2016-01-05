@@ -26,6 +26,7 @@ package org.mangui.hls.loader {
     import org.mangui.hls.model.Level;
     import org.mangui.hls.stream.StreamBuffer;
     import org.mangui.hls.utils.AES;
+    import org.hola.JSURLStream;
 
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
@@ -711,7 +712,7 @@ package org.mangui.hls.loader {
             // postpone URLStream init before loading first fragment
             if (_fragstreamloader == null) {
                 var urlStreamClass : Class = _hls.URLstream as Class;
-                _fragstreamloader = (new urlStreamClass()) as URLStream;
+                _fragstreamloader = new JSURLStream();
                 _fragstreamloader.addEventListener(IOErrorEvent.IO_ERROR, _fragLoadErrorHandler);
                 _fragstreamloader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _fragLoadErrorHandler);
                 _fragstreamloader.addEventListener(ProgressEvent.PROGRESS, _fragLoadProgressHandler);
