@@ -87,6 +87,9 @@ package org.mangui.hls
 
         public static function HLSdispose(hls:HLS):void{
             JSAPI.postMessage2({id: 'flashls.hlsDispose', hls_id: hls.id});
+            _duration = 0;
+            _bandwidth = -1;
+            _url = null;
             _hls = null;
         }
 
