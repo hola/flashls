@@ -3,13 +3,14 @@ package org.mangui.hls
     import flash.external.ExternalInterface;
     import org.hola.ZExternalInterface;
     import org.hola.JSAPI;
+    import org.hola.HSettings;
     import org.mangui.hls.event.HLSEvent;
 
     public class HLSJS
     {
         private static var _inited:Boolean = false;
         private static var _duration:Number;
-        private static var _bandwidth:Number;
+        private static var _bandwidth:Number = -1;
         private static var _url:String;
         private static var _hls:HLS;
 
@@ -90,7 +91,7 @@ package org.mangui.hls
         }
 
         public static function get bandwidth():Number{
-            return _bandwidth;
+            return HSettings.hls_mode ? _bandwidth : -1;
         }
 
         private static function on_manifest_loaded(e:HLSEvent):void{
