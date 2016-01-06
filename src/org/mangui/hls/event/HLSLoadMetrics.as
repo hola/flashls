@@ -34,7 +34,7 @@
 
         public function get bandwidth() : Number {
             var bandwidth : Number = HLSJS.bandwidth;
-            return bandwidth>0 ? bandwidth : 
+            return bandwidth>0 ? bandwidth :
                 Math.round(size * 8000 / (parsing_end_time - loading_request_time));
         }
 
