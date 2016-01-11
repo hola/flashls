@@ -5,6 +5,7 @@ package org.mangui.hls
     import org.hola.JSAPI;
     import org.hola.HSettings;
     import org.mangui.hls.event.HLSEvent;
+    import org.mangui.hls.constant.HLSPlayStates;
 
     public class HLSJS
     {
@@ -12,6 +13,7 @@ package org.mangui.hls
         private static var _duration:Number;
         private static var _bandwidth:Number = -1;
         private static var _url:String;
+        private static var _state:String;
         private static var _hls:HLS;
 
         public static function init():void{
@@ -40,6 +42,14 @@ package org.mangui.hls
 
         public static function HLSnew(hls:HLS):void{
             _hls = hls;
+            _state = HLSPlayStates.IDLE;
+            // track duration events
+            hls.addEventListener(HLSEvent.MANIFEST_LOADED, on_manifest_loaded);
+            hls.addEventListener(HLSEvent.PLAYLIST_DURATION_UPDATED,
+                on_playlist_duration_updated);
+            // track playlist-url/state
+            hls.addEventListener(HLSEvent.MANIFEST_LOADING, on_manifest_loading);
+            hls.addEventListener(HLSEvent.PLAYBACK_STATE, on_playback_state);
             // notify js events
             hls.addEventListener(HLSEvent.MANIFEST_LOADING, on_event);
             hls.addEventListener(HLSEvent.MANIFEST_PARSED, on_event);
@@ -76,12 +86,6 @@ package org.mangui.hls
             hls.addEventListener(HLSEvent.FPS_DROP_SMOOTH_LEVEL_SWITCH,
                 on_event);
             hls.addEventListener(HLSEvent.LIVE_LOADING_STALLED, on_event);
-            // track duration events
-            hls.addEventListener(HLSEvent.MANIFEST_LOADED, on_manifest_loaded);
-            hls.addEventListener(HLSEvent.PLAYLIST_DURATION_UPDATED,
-                on_playlist_duration_updated);
-            // track playlist url
-            hls.addEventListener(HLSEvent.MANIFEST_LOADING, on_manifest_loading);
             JSAPI.postMessage2({id: 'flashls.hlsNew', hls_id: hls.id});
         }
 
@@ -90,6 +94,7 @@ package org.mangui.hls
             _duration = 0;
             _bandwidth = -1;
             _url = null;
+            _state = HLSPlayStates.IDLE;
             _hls = null;
         }
 
@@ -107,6 +112,12 @@ package org.mangui.hls
 
         private static function on_manifest_loading(e:HLSEvent):void{
             _url = e.url;
+            _state = "LOADING";
+            on_event(new HLSEvent(HLSEvent.PLAYBACK_STATE, _state));
+        }
+
+        private static function on_playback_state(e:HLSEvent):void{
+            _state = e.state;
         }
 
         private static function on_event(e:HLSEvent):void{
@@ -141,7 +152,7 @@ package org.mangui.hls
         }
 
         private static function hola_hls_get_state():String{
-            return _hls.playbackState;
+            return _state;
         }
 
         private static function hola_hls_get_levels():Object{
