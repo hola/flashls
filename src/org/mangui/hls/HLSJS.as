@@ -38,6 +38,8 @@ package org.mangui.hls
                 hola_hls_get_level);
             ExternalInterface.addCallback("hola_setBandwidth",
                 hola_setBandwidth);
+            ExternalInterface.addCallback("hola_hls_get_type",
+                hola_hls_get_type);
         }
 
         public static function HLSnew(hls:HLS):void{
@@ -153,6 +155,10 @@ package org.mangui.hls
 
         private static function hola_hls_get_state():String{
             return _state;
+        }
+
+        private static function hola_hls_get_type():String{
+            return _hls.type;
         }
 
         private static function hola_hls_get_levels():Object{
