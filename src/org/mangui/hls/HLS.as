@@ -50,7 +50,6 @@ package org.mangui.hls {
         public function HLS() {
             HLSJS.init();
             id = ++hls_count;
-            HLSJS.HLSnew(this);
             _levelLoader = new LevelLoader(this);
             _altAudioLevelLoader = new AltAudioLevelLoader(this);
             _audioTrackController = new AudioTrackController(this);
@@ -63,6 +62,7 @@ package org.mangui.hls {
             connection.connect(null);
             _hlsNetStream = new HLSNetStream(connection, this, _streamBuffer);
             this.addEventListener(HLSEvent.LEVEL_SWITCH, _levelSwitchHandler);
+            HLSJS.HLSnew(this);
         };
 
         /** Forward internal errors. **/
