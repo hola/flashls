@@ -107,11 +107,6 @@
             }
             g_curr_id++;
             g_curr_hls = this;
-            if (ZExternalInterface.avail())
-            {
-                ExternalInterface.call('window.postMessage',
-                    {id: 'flashls.hlsNew', hls_id: g_curr_id}, '*');
-            }
             var connection : NetConnection = new NetConnection();
             connection.connect(null);
             _manifestLoader = new ManifestLoader(this);
@@ -120,7 +115,11 @@
             // default loader
             _fragmentLoader = new FragmentLoader(this, _audioTrackController);
             _hlsNetStream = new HLSNetStream(connection, this, _fragmentLoader);
-
+            if (ZExternalInterface.avail())
+            {
+                ExternalInterface.call('window.postMessage',
+                    {id: 'flashls.hlsNew', hls_id: g_curr_id}, '*');
+            }
             add_event(HLSEvent.MANIFEST_LOADING);
             add_event(HLSEvent.MANIFEST_PARSED);
             add_event(HLSEvent.MANIFEST_LOADED);
