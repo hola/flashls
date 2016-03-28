@@ -132,7 +132,7 @@ package org.mangui.hls
 
         private static function hola_version():Object{
             return {
-                flashls_version: '0.4.2.1',
+                flashls_version: '0.4.4.20',
                 patch_version: '2.0.4'
             };
         }
