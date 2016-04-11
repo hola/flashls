@@ -45,7 +45,7 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.18'
+                patch_version: '1.0.19'
             };
         }
         private static function hola_hls_get_video_url() : String {
