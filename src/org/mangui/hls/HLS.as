@@ -73,11 +73,37 @@
         }
 
         private static function hola_hls_get_levels() : Object {
-            return g_curr_hls.levels
+	    var levels:Vector.<Object> = 
+	        new Vector.<Object>(g_curr_hls.levels.length);
+	    for (var i:int = 0; i<g_curr_hls.levels.length; i++)
+	    {
+		var l:Level = g_curr_hls.levels[i];
+		// no fragments returned, use get_segment_info for fragm. info
+	        levels[i] = Object({url: l.url, bitrate: l.bitrate,
+		    index: l.index, fragments: []});
+            }
+            return levels;
         }
 
+        private static function hola_hls_get_segment_info(url:String) : Object {
+	    for (var i:int = 0; i<g_curr_hls.levels.length; i++)
+	    {
+		var l:Level = g_curr_hls.levels[i];
+		for (var j:int = 0; j<l.fragments.length; j++)
+		{
+		    if (url==l.fragments[j].url)
+		    {
+		        return Object({fragment: l.fragments[j],
+			    level: Object({url: l.url, bitrate: l.bitrate,
+			    index: l.index})});
+		    }
+		}
+            }
+	    return undefined;
+	}
+
         private static function hola_hls_get_level() : Number {
-            return g_curr_hls.level
+            return g_curr_hls.level;
         }
 
         /** Create and connect all components. **/
@@ -102,6 +128,8 @@
                     HLS.hola_hls_get_state);
                 ExternalInterface.addCallback("hola_hls_get_levels",
                     HLS.hola_hls_get_levels);
+                ExternalInterface.addCallback("hola_hls_get_segment_info",
+                    HLS.hola_hls_get_segment_info);
                 ExternalInterface.addCallback("hola_hls_get_level",
                     HLS.hola_hls_get_level);
             }
