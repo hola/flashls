@@ -6,6 +6,7 @@ package org.mangui.hls
     import org.hola.HSettings;
     import org.mangui.hls.event.HLSEvent;
     import org.mangui.hls.constant.HLSPlayStates;
+    import org.mangui.hls.model.Level;
 
     public class HLSJS
     {
@@ -34,6 +35,8 @@ package org.mangui.hls
                 hola_hls_get_state);
             ExternalInterface.addCallback("hola_hls_get_levels",
                 hola_hls_get_levels);
+            ExternalInterface.addCallback("hola_hls_get_segment_info",
+                hola_hls_get_segment_info);
             ExternalInterface.addCallback("hola_hls_get_level",
                 hola_hls_get_level);
             ExternalInterface.addCallback("hola_setBandwidth",
@@ -162,7 +165,33 @@ package org.mangui.hls
         }
 
         private static function hola_hls_get_levels():Object{
-            return _hls.levels;
+            var levels:Vector.<Object> = 
+                new Vector.<Object>(_hls.levels.length);
+            for (var i:int = 0; i<_hls.levels.length; i++)
+            {
+                var l:Level = _hls.levels[i];
+                // no fragments returned, use get_segment_info for fragm. info
+                levels[i] = Object({url: l.url, bitrate: l.bitrate,
+                    index: l.index, fragments: []});
+            }
+            return levels;
+        }
+
+        private static function hola_hls_get_segment_info(url:String):Object{
+            for (var i:int = 0; i<_hls.levels.length; i++)
+            {
+                var l:Level = _hls.levels[i];
+                for (var j:int = 0; j<l.fragments.length; j++)
+                {
+                    if (url==l.fragments[j].url)
+                    {
+                        return Object({fragment: l.fragments[j],
+                            level: Object({url: l.url, bitrate: l.bitrate,
+                            index: l.index})});
+                    }
+                }
+            }
+            return undefined;
         }
 
         private static function hola_hls_get_level():Number{
