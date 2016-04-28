@@ -45,12 +45,16 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.19'
+                patch_version: '1.0.20'
             };
         }
         private static function hola_hls_get_video_url() : String {
             return g_curr_hls._url;
         }
+
+        private static function hola_hls_get_type():String{
+            return g_curr_hls.type;
+        }	
 
         private static function hola_hls_get_position() : Number {
             return g_curr_hls.position;
@@ -132,6 +136,8 @@
                     HLS.hola_hls_get_segment_info);
                 ExternalInterface.addCallback("hola_hls_get_level",
                     HLS.hola_hls_get_level);
+                ExternalInterface.addCallback("hola_hls_get_type",
+                    HLS.hola_hls_get_type);		    
             }
             g_curr_id++;
             g_curr_hls = this;
