@@ -45,7 +45,7 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.20'
+                patch_version: '1.0.21'
             };
         }
         private static function hola_hls_get_video_url() : String {
@@ -106,8 +106,14 @@
 	    return undefined;
 	}
 
-        private static function hola_hls_get_level() : Number {
-            return g_curr_hls.level;
+        private static function hola_hls_get_bitrate(): Number
+	{
+   	    return g_curr_hls.levels[g_curr_hls.level] ? g_curr_hls.levels[g_curr_hls.level].bitrate : 0;
+	}
+
+        private static function hola_hls_get_level(): String
+	{
+            return g_curr_hls.levels[g_curr_hls.level] ? g_curr_hls.levels[g_curr_hls.level].url : undefined;
         }
 
         /** Create and connect all components. **/
@@ -120,6 +126,7 @@
                     HLS.hola_hls_call);
                 ExternalInterface.addCallback("hola_version",
                     HLS.hola_version);
+                ExternalInterface.addCallback("hola_hls_get_bitrate", hola_hls_get_bitrate);
                 ExternalInterface.addCallback("hola_hls_get_video_url",
                     HLS.hola_hls_get_video_url);
                 ExternalInterface.addCallback("hola_hls_get_position",
