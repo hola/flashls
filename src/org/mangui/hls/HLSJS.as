@@ -39,6 +39,7 @@ package org.mangui.hls
                 hola_hls_get_segment_info);
             ExternalInterface.addCallback("hola_hls_get_level",
                 hola_hls_get_level);
+	    ExternalInterface.addCallback("hola_hls_get_bitrate", hola_hls_get_bitrate);
             ExternalInterface.addCallback("hola_setBandwidth",
                 hola_setBandwidth);
             ExternalInterface.addCallback("hola_hls_get_type",
@@ -194,8 +195,14 @@ package org.mangui.hls
             return undefined;
         }
 
-        private static function hola_hls_get_level():Number{
-            return _hls.loadLevel;
+        private static function hola_hls_get_bitrate(): Number
+	{
+   	    return _hls.levels[_hls.loadLevel] ? _hls.levels[_hls.loadLevel].bitrate : 0;
+	}
+
+        private static function hola_hls_get_level(): String
+	{
+            return _hls.levels[_hls.loadLevel] ? _hls.levels[_hls.loadLevel].url : undefined;
         }
 
         private static function hola_setBandwidth(bandwidth:Number):void{
