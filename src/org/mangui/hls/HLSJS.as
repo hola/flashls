@@ -7,6 +7,8 @@ package org.mangui.hls
     import org.mangui.hls.event.HLSEvent;
     import org.mangui.hls.constant.HLSPlayStates;
     import org.mangui.hls.model.Level;
+    import org.mangui.hls.model.Fragment;
+    import flash.utils.setTimeout;
 
     public class HLSJS
     {
@@ -35,6 +37,7 @@ package org.mangui.hls
                 hola_hls_get_state);
             ExternalInterface.addCallback("hola_hls_get_levels",
                 hola_hls_get_levels);
+	    ExternalInterface.addCallback("hola_hls_get_levels_async", hola_hls_get_levels_async);
             ExternalInterface.addCallback("hola_hls_get_segment_info",
                 hola_hls_get_segment_info);
             ExternalInterface.addCallback("hola_hls_get_level",
@@ -62,7 +65,7 @@ package org.mangui.hls
             hls.addEventListener(HLSEvent.MANIFEST_LOADED, on_event);
             hls.addEventListener(HLSEvent.LEVEL_LOADING, on_event);
             hls.addEventListener(HLSEvent.LEVEL_LOADING_ABORTED, on_event);
-            hls.addEventListener(HLSEvent.LEVEL_LOADED, on_event);
+            hls.addEventListener(HLSEvent.LEVEL_LOADED, on_level_loaded);
             hls.addEventListener(HLSEvent.LEVEL_SWITCH, on_event);
             hls.addEventListener(HLSEvent.LEVEL_ENDLIST, on_event);
             hls.addEventListener(HLSEvent.FRAGMENT_LOADING, on_event);
@@ -126,6 +129,12 @@ package org.mangui.hls
             _state = e.state;
         }
 
+	private static function on_level_loaded(e: HLSEvent): void
+	{
+            JSAPI.postMessage2({id: 'flashls.'+e.type, hls_id: _hls.id, 
+	        level: level_to_object(_hls.levels[e.loadMetrics.level])});
+	}
+
         private static function on_event(e:HLSEvent):void{
             JSAPI.postMessage2({id: 'flashls.'+e.type, hls_id: _hls.id,
                 url: e.url, level: e.level, duration: e.duration, levels: e.levels,
@@ -137,7 +146,7 @@ package org.mangui.hls
         private static function hola_version():Object{
             return {
                 flashls_version: '0.4.4.20',
-                patch_version: '2.0.6'
+                patch_version: '2.0.7'
             };
         }
 
@@ -165,6 +174,17 @@ package org.mangui.hls
             return _hls.type;
         }
 
+        private static function level_to_object(l: Level): Object
+	{
+            var fragments: Array = [];
+	    for (var i: int = 0; i<l.fragments.length; i++)
+	    {
+	        var fragment: Fragment = l.fragments[i];
+	        fragments.push({url: fragment.url, duration: fragment.duration, seqnum: fragment.seqnum});
+	    }	
+	    return {url: l.url, bitrate: l.bitrate, fragments: fragments, index: l.index};
+	}
+
         private static function hola_hls_get_levels():Object{
             var levels:Vector.<Object> = 
                 new Vector.<Object>(_hls.levels.length);
@@ -177,6 +197,17 @@ package org.mangui.hls
             }
             return levels;
         }
+
+        private static function hola_hls_get_levels_async(): void
+	{
+	    setTimeout(function(): void
+	    {
+                var levels: Array = [];
+                for (var i: int = 0; i<_hls.levels.length; i++)
+                    levels.push(level_to_object(_hls.levels[i]));
+		JSAPI.postMessage2({id: 'flashls.hlsAsyncMessage', hls_id: _hls.id, type: 'get_levels', msg: levels});
+	    }, 0);
+        }	
 
         private static function hola_hls_get_segment_info(url:String):Object{
             for (var i:int = 0; i<_hls.levels.length; i++)
