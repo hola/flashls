@@ -43,6 +43,7 @@ package org.mangui.hls
             ExternalInterface.addCallback("hola_hls_get_level",
                 hola_hls_get_level);
 	    ExternalInterface.addCallback("hola_hls_get_bitrate", hola_hls_get_bitrate);
+	    ExternalInterface.addCallback("hola_hls_get_decoded_frames", hola_hls_get_decoded_frames);
             ExternalInterface.addCallback("hola_setBandwidth",
                 hola_setBandwidth);
             ExternalInterface.addCallback("hola_hls_get_type",
@@ -146,7 +147,7 @@ package org.mangui.hls
         private static function hola_version():Object{
             return {
                 flashls_version: '0.4.4.20',
-                patch_version: '2.0.7'
+                patch_version: '2.0.8'
             };
         }
 
@@ -160,6 +161,12 @@ package org.mangui.hls
 
         private static function hola_hls_get_duration():Number{
             return _duration;
+        }
+
+
+        private static function hola_hls_get_decoded_frames(): Number
+	{
+            return _hls.stream.decodedFrames;
         }
 
         private static function hola_hls_get_buffer_sec():Number{
