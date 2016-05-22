@@ -147,7 +147,7 @@ package org.mangui.hls
         private static function hola_version():Object{
             return {
                 flashls_version: '0.4.4.20',
-                patch_version: '2.0.8'
+                patch_version: '2.0.9'
             };
         }
 
@@ -235,12 +235,12 @@ package org.mangui.hls
 
         private static function hola_hls_get_bitrate(): Number
 	{
-   	    return _hls.levels[_hls.loadLevel] ? _hls.levels[_hls.loadLevel].bitrate : 0;
+   	    return _hls.loadLevel<_hls.levels.length ? _hls.levels[_hls.loadLevel].bitrate : 0;
 	}
 
         private static function hola_hls_get_level(): String
 	{
-            return _hls.levels[_hls.loadLevel] ? _hls.levels[_hls.loadLevel].url : undefined;
+            return _hls.loadLevel<_hls.levels.length ? _hls.levels[_hls.loadLevel].url : undefined;
         }
 
         private static function hola_setBandwidth(bandwidth:Number):void{
