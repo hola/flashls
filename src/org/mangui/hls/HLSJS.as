@@ -37,13 +37,16 @@ package org.mangui.hls
                 hola_hls_get_state);
             ExternalInterface.addCallback("hola_hls_get_levels",
                 hola_hls_get_levels);
-	    ExternalInterface.addCallback("hola_hls_get_levels_async", hola_hls_get_levels_async);
+	    ExternalInterface.addCallback("hola_hls_get_levels_async",
+	        hola_hls_get_levels_async);
             ExternalInterface.addCallback("hola_hls_get_segment_info",
                 hola_hls_get_segment_info);
             ExternalInterface.addCallback("hola_hls_get_level",
                 hola_hls_get_level);
-	    ExternalInterface.addCallback("hola_hls_get_bitrate", hola_hls_get_bitrate);
-	    ExternalInterface.addCallback("hola_hls_get_decoded_frames", hola_hls_get_decoded_frames);
+	    ExternalInterface.addCallback("hola_hls_get_bitrate",
+	        hola_hls_get_bitrate);
+	    ExternalInterface.addCallback("hola_hls_get_decoded_frames",
+	        hola_hls_get_decoded_frames);
             ExternalInterface.addCallback("hola_setBandwidth",
                 hola_setBandwidth);
             ExternalInterface.addCallback("hola_hls_get_type",
@@ -54,11 +57,13 @@ package org.mangui.hls
             _hls = hls;
             _state = HLSPlayStates.IDLE;
             // track duration events
-            hls.addEventListener(HLSEvent.MANIFEST_LOADED, on_manifest_loaded);
+            hls.addEventListener(HLSEvent.MANIFEST_LOADED,
+	        on_manifest_loaded);
             hls.addEventListener(HLSEvent.PLAYLIST_DURATION_UPDATED,
                 on_playlist_duration_updated);
             // track playlist-url/state
-            hls.addEventListener(HLSEvent.MANIFEST_LOADING, on_manifest_loading);
+            hls.addEventListener(HLSEvent.MANIFEST_LOADING,
+	        on_manifest_loading);
             hls.addEventListener(HLSEvent.PLAYBACK_STATE, on_playback_state);
             // notify js events
             hls.addEventListener(HLSEvent.MANIFEST_LOADING, on_event);
@@ -96,11 +101,13 @@ package org.mangui.hls
             hls.addEventListener(HLSEvent.FPS_DROP_SMOOTH_LEVEL_SWITCH,
                 on_event);
             hls.addEventListener(HLSEvent.LIVE_LOADING_STALLED, on_event);
-            JSAPI.postMessage2({id: 'flashls.hlsNew', hls_id: hls.id});
+            JSAPI.postMessage2({id: 'flashls.hlsNew',
+	        player_id: HSettings.player_id});
         }
 
         public static function HLSdispose(hls:HLS):void{
-            JSAPI.postMessage2({id: 'flashls.hlsDispose', hls_id: hls.id});
+            JSAPI.postMessage2({id: 'flashls.hlsDispose',
+	        player_id: HSettings.player_id});
             _duration = 0;
             _bandwidth = -1;
             _url = null;
@@ -132,22 +139,24 @@ package org.mangui.hls
 
 	private static function on_level_loaded(e: HLSEvent): void
 	{
-            JSAPI.postMessage2({id: 'flashls.'+e.type, hls_id: _hls.id, 
+            JSAPI.postMessage2({id: 'flashls.'+e.type,
+	        player_id: HSettings.player_id,
 	        level: level_to_object(_hls.levels[e.loadMetrics.level])});
 	}
 
         private static function on_event(e:HLSEvent):void{
-            JSAPI.postMessage2({id: 'flashls.'+e.type, hls_id: _hls.id,
-                url: e.url, level: e.level, duration: e.duration, levels: e.levels,
-                error: e.error, loadMetrics: e.loadMetrics,
-                playMetrics: e.playMetrics, mediatime: e.mediatime, state: e.state,
-                audioTrack: e.audioTrack, streamType: e.streamType});
+            JSAPI.postMessage2({id: 'flashls.'+e.type,
+	        player_id: HSettings.player_id, url: e.url, level: e.level,
+		duration: e.duration, levels: e.levels, error: e.error,
+		loadMetrics: e.loadMetrics, playMetrics: e.playMetrics,
+		mediatime: e.mediatime, state: e.state,
+		audioTrack: e.audioTrack, streamType: e.streamType});
         }
 
         private static function hola_version():Object{
             return {
                 flashls_version: '0.4.4.20',
-                patch_version: '2.0.9'
+                patch_version: '2.0.10'
             };
         }
 
@@ -187,9 +196,11 @@ package org.mangui.hls
 	    for (var i: int = 0; i<l.fragments.length; i++)
 	    {
 	        var fragment: Fragment = l.fragments[i];
-	        fragments.push({url: fragment.url, duration: fragment.duration, seqnum: fragment.seqnum});
+	        fragments.push({url: fragment.url,
+		    duration: fragment.duration, seqnum: fragment.seqnum});
 	    }	
-	    return {url: l.url, bitrate: l.bitrate, fragments: fragments, index: l.index};
+	    return {url: l.url, bitrate: l.bitrate, fragments: fragments,
+	        index: l.index};
 	}
 
         private static function hola_hls_get_levels():Object{
@@ -198,7 +209,7 @@ package org.mangui.hls
             for (var i:int = 0; i<_hls.levels.length; i++)
             {
                 var l:Level = _hls.levels[i];
-                // no fragments returned, use get_segment_info for fragm. info
+                // no fragments returned, use get_segment_info for fragm.info
                 levels[i] = Object({url: l.url, bitrate: l.bitrate,
                     index: l.index, fragments: []});
             }
@@ -212,7 +223,9 @@ package org.mangui.hls
                 var levels: Array = [];
                 for (var i: int = 0; i<_hls.levels.length; i++)
                     levels.push(level_to_object(_hls.levels[i]));
-		JSAPI.postMessage2({id: 'flashls.hlsAsyncMessage', hls_id: _hls.id, type: 'get_levels', msg: levels});
+		JSAPI.postMessage2({id: 'flashls.hlsAsyncMessage',
+		    player_id: HSettings.player_id, type: 'get_levels',
+		    msg: levels});
 	    }, 0);
         }	
 
