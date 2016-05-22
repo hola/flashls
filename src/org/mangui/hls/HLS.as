@@ -47,7 +47,7 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.23'
+                patch_version: '1.0.24'
             };
         }
         private static function hola_hls_get_video_url() : String {
@@ -121,7 +121,7 @@
 
         private static function hola_hls_get_bitrate(): Number
 	{
-   	    return g_curr_hls.levels[g_curr_hls.level] ? g_curr_hls.levels[g_curr_hls.level].bitrate : 0;
+   	    return g_curr_hls.level<g_curr_hls.levels.length ? g_curr_hls.levels[g_curr_hls.level].bitrate : 0;
 	}
 
         private static function hola_hls_get_decoded_frames(): Number
@@ -131,7 +131,7 @@
 
         private static function hola_hls_get_level(): String
 	{
-            return g_curr_hls.levels[g_curr_hls.level] ? g_curr_hls.levels[g_curr_hls.level].url : undefined;
+            return g_curr_hls.level<g_curr_hls.levels.length ? g_curr_hls.levels[g_curr_hls.level].url : undefined;
         }
 
         /** Create and connect all components. **/
