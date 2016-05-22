@@ -23,6 +23,7 @@
     import org.hola.JSAPI;
     import flash.external.ExternalInterface;
     import org.hola.ZExternalInterface;
+    import org.hola.HSettings;
 
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
@@ -47,7 +48,7 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.24'
+                patch_version: '1.0.25'
             };
         }
         private static function hola_hls_get_video_url() : String {
@@ -115,7 +116,10 @@
                 var levels: Array = [];
                 for (var i: int = 0; i<g_curr_hls.levels.length; i++)
                     levels.push(level_to_object(g_curr_hls.levels[i]));
-		ExternalInterface.call('window.postMessage', {id: 'flashls.hlsAsyncMessage', hls_id: g_curr_id, type: 'get_levels', msg: levels});
+		ExternalInterface.call('window.postMessage',
+		    {id: 'flashls.hlsAsyncMessage', hls_id: g_curr_id,
+	            player_id: HSettings.player_id, type: 'get_levels',
+	            msg: levels});
 	    }, 0);
         }
 
@@ -179,7 +183,8 @@
             if (ZExternalInterface.avail())
             {
                 ExternalInterface.call('window.postMessage',
-                    {id: 'flashls.hlsNew', hls_id: g_curr_id}, '*');
+                    {id: 'flashls.hlsNew', hls_id: g_curr_id,
+		    player_id: HSettings.player_id}, '*');
             }
             add_event(HLSEvent.MANIFEST_LOADING);
             add_event(HLSEvent.MANIFEST_PARSED);
@@ -208,8 +213,10 @@
 	{
             if (!ZExternalInterface.avail())
                 return;
-            ExternalInterface.call('window.postMessage', {id: 'flashls.'+e.type, hls_id: g_curr_id, 
-	        level: level_to_object(g_curr_hls.levels[e.level])});	
+            ExternalInterface.call('window.postMessage',
+	    {id: 'flashls.'+e.type, hls_id: g_curr_id,
+	    player_id: HSettings.player_id,
+	    level: level_to_object(g_curr_hls.levels[e.level])});
 	}
 
         private static function level_to_object(l: Level): Object
@@ -235,6 +242,7 @@
                     level: event.level, duration: event.duration,
                     levels: event.levels, error: event.error,
                     loadMetrics: event.loadMetrics,
+		    player_id: HSettings.player_id,
                     playMetrics: event.playMetrics, mediatime: event.mediatime,
                     state: event.state, audioTrack: event.audioTrack}, '*');
             }
@@ -255,7 +263,8 @@
             if (ZExternalInterface.avail())
             {
                 ExternalInterface.call('window.postMessage',
-                    {id: 'flashls.hlsDispose', hls_id: g_curr_id}, '*');
+                    {id: 'flashls.hlsDispose', hls_id: g_curr_id,
+		    player_id: HSettings.player_id}, '*');
             }
             _fragmentLoader.dispose();
             _manifestLoader.dispose();
