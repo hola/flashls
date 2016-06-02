@@ -48,7 +48,7 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.27'
+                patch_version: '1.0.28'
             };
         }
         private static function hola_hls_get_video_url() : String {
@@ -116,10 +116,7 @@
                 var levels: Array = [];
                 for (var i: int = 0; i<g_curr_hls.levels.length; i++)
                     levels.push(level_to_object(g_curr_hls.levels[i]));
-		ExternalInterface.call('window.postMessage',
-		    {id: 'flashls.hlsAsyncMessage', hls_id: g_curr_id,
-	            player_id: HSettings.gets('player_id'), type: 'get_levels',
-	            msg: levels});
+		JSAPI.postMessage('flashls.hlsAsyncMessage', {type: 'get_levels', msg: levels});
 	    }, 0);
         }
 
@@ -180,12 +177,7 @@
             // default loader
             _fragmentLoader = new FragmentLoader(this, _audioTrackController);
             _hlsNetStream = new HLSNetStream(connection, this, _fragmentLoader);
-            if (ZExternalInterface.avail())
-            {
-                ExternalInterface.call('window.postMessage',
-                    {id: 'flashls.hlsNew', hls_id: g_curr_id,
-		    player_id: HSettings.gets('player_id')}, '*');
-            }
+            JSAPI.postMessage('flashls.hlsNew');
             add_event(HLSEvent.MANIFEST_LOADING);
             add_event(HLSEvent.MANIFEST_PARSED);
             add_event(HLSEvent.MANIFEST_LOADED);
@@ -211,12 +203,7 @@
 
         private function on_event_loaded(e: HLSEvent): void
 	{
-            if (!ZExternalInterface.avail())
-                return;
-            ExternalInterface.call('window.postMessage',
-	    {id: 'flashls.'+e.type, hls_id: g_curr_id,
-	    player_id: HSettings.gets('player_id'),
-	    level: level_to_object(g_curr_hls.levels[e.level])});
+	    JSAPI.postMessage('flashls.'+e.type, {level: level_to_object(g_curr_hls.levels[e.level])});
 	}
 
         private static function level_to_object(l: Level): Object
@@ -235,16 +222,10 @@
         }
         private function event_handler_func(name:String):Function{
             return function(event:HLSEvent):void{
-                if (!ZExternalInterface.avail())
-                    return;
-                ExternalInterface.call('window.postMessage',
-                    {id: name, hls_id: g_curr_id, url: event.url,
-                    level: event.level, duration: event.duration,
-                    levels: event.levels, error: event.error,
-                    loadMetrics: event.loadMetrics,
-		    player_id: HSettings.gets('player_id'),
+                JSAPI.postMessage(name, {url: event.url, level: event.level, duration: event.duration,
+                    levels: event.levels, error: event.error, loadMetrics: event.loadMetrics,
                     playMetrics: event.playMetrics, mediatime: event.mediatime,
-                    state: event.state, audioTrack: event.audioTrack}, '*');
+                    state: event.state, audioTrack: event.audioTrack});
             }
         }
 
@@ -260,12 +241,7 @@
         };
 
         public function dispose() : void {
-            if (ZExternalInterface.avail())
-            {
-                ExternalInterface.call('window.postMessage',
-                    {id: 'flashls.hlsDispose', hls_id: g_curr_id,
-		    player_id: HSettings.gets('player_id')}, '*');
-            }
+	    JSAPI.postMessage('flashls.hlsDispose');
             _fragmentLoader.dispose();
             _manifestLoader.dispose();
             _audioTrackController.dispose();
