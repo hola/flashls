@@ -48,7 +48,7 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.26'
+                patch_version: '1.0.27'
             };
         }
         private static function hola_hls_get_video_url() : String {
@@ -118,7 +118,7 @@
                     levels.push(level_to_object(g_curr_hls.levels[i]));
 		ExternalInterface.call('window.postMessage',
 		    {id: 'flashls.hlsAsyncMessage', hls_id: g_curr_id,
-	            player_id: HSettings.player_id, type: 'get_levels',
+	            player_id: HSettings.gets('player_id'), type: 'get_levels',
 	            msg: levels});
 	    }, 0);
         }
@@ -184,7 +184,7 @@
             {
                 ExternalInterface.call('window.postMessage',
                     {id: 'flashls.hlsNew', hls_id: g_curr_id,
-		    player_id: HSettings.player_id}, '*');
+		    player_id: HSettings.gets('player_id')}, '*');
             }
             add_event(HLSEvent.MANIFEST_LOADING);
             add_event(HLSEvent.MANIFEST_PARSED);
@@ -215,7 +215,7 @@
                 return;
             ExternalInterface.call('window.postMessage',
 	    {id: 'flashls.'+e.type, hls_id: g_curr_id,
-	    player_id: HSettings.player_id,
+	    player_id: HSettings.gets('player_id'),
 	    level: level_to_object(g_curr_hls.levels[e.level])});
 	}
 
@@ -242,7 +242,7 @@
                     level: event.level, duration: event.duration,
                     levels: event.levels, error: event.error,
                     loadMetrics: event.loadMetrics,
-		    player_id: HSettings.player_id,
+		    player_id: HSettings.gets('player_id'),
                     playMetrics: event.playMetrics, mediatime: event.mediatime,
                     state: event.state, audioTrack: event.audioTrack}, '*');
             }
@@ -264,7 +264,7 @@
             {
                 ExternalInterface.call('window.postMessage',
                     {id: 'flashls.hlsDispose', hls_id: g_curr_id,
-		    player_id: HSettings.player_id}, '*');
+		    player_id: HSettings.gets('player_id')}, '*');
             }
             _fragmentLoader.dispose();
             _manifestLoader.dispose();
