@@ -101,13 +101,11 @@ package org.mangui.hls
             hls.addEventListener(HLSEvent.FPS_DROP_SMOOTH_LEVEL_SWITCH,
                 on_event);
             hls.addEventListener(HLSEvent.LIVE_LOADING_STALLED, on_event);
-            JSAPI.postMessage2({id: 'flashls.hlsNew',
-	        player_id: HSettings.gets('player_id')});
+            JSAPI.postMessage('flashls.hlsNew');
         }
 
         public static function HLSdispose(hls:HLS):void{
-            JSAPI.postMessage2({id: 'flashls.hlsDispose',
-	        player_id: HSettings.gets('player_id')});
+            JSAPI.postMessage('flashls.hlsDispose');
             _duration = 0;
             _bandwidth = -1;
             _url = null;
@@ -139,14 +137,11 @@ package org.mangui.hls
 
 	private static function on_level_loaded(e: HLSEvent): void
 	{
-            JSAPI.postMessage2({id: 'flashls.'+e.type,
-	        player_id: HSettings.gets('player_id'),
-	        level: level_to_object(_hls.levels[e.loadMetrics.level])});
+            JSAPI.postMessage('flashls.'+e.type, {level: level_to_object(_hls.levels[e.loadMetrics.level])});
 	}
 
         private static function on_event(e:HLSEvent):void{
-            JSAPI.postMessage2({id: 'flashls.'+e.type,
-	        player_id: HSettings.gets('player_id'), url: e.url, level: e.level,
+            JSAPI.postMessage('flashls.'+e.type, {url: e.url, level: e.level,
 		duration: e.duration, levels: e.levels, error: e.error,
 		loadMetrics: e.loadMetrics, playMetrics: e.playMetrics,
 		mediatime: e.mediatime, state: e.state,
@@ -156,7 +151,7 @@ package org.mangui.hls
         private static function hola_version():Object{
             return {
                 flashls_version: '0.4.4.20',
-                patch_version: '2.0.12'
+                patch_version: '2.0.13'
             };
         }
 
@@ -223,9 +218,7 @@ package org.mangui.hls
                 var levels: Array = [];
                 for (var i: int = 0; i<_hls.levels.length; i++)
                     levels.push(level_to_object(_hls.levels[i]));
-		JSAPI.postMessage2({id: 'flashls.hlsAsyncMessage',
-		    player_id: HSettings.gets('player_id'), type: 'get_levels',
-		    msg: levels});
+		JSAPI.postMessage('flashls.hlsAsyncMessage', {type: 'get_levels', msg: levels});
 	    }, 0);
         }	
 
