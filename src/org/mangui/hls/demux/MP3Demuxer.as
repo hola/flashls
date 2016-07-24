@@ -24,6 +24,7 @@
         private var _callback_complete : Function;
         private var _callback_error : Function;
         private var _callback_id3tag : Function;
+	private var _context: *;
 
         /** append new data */
         public function append(data : ByteArray) : void {
@@ -75,28 +76,42 @@
             var audiotracks : Vector.<AudioTrack> = new Vector.<AudioTrack>();
             audiotracks.push(new AudioTrack('MP3 ES', AudioTrack.FROM_DEMUX, 0, true,false));
             // report unique audio track. dont check return value as obviously the track will be selected
-            _callback_audioselect(audiotracks);
+	    if (_context)
+                _callback_audioselect(audiotracks, _context);
+	    else
+	        _callback_audioselect(audiotracks);
             CONFIG::LOGGING {
                 Log.debug("MP3: all tags extracted, callback demux");
             }
             _data = null;
-            if(id3.tags.length) {
-                _callback_id3tag(id3.tags);
-            }
-            _callback_progress(audioTags);
-            _callback_complete();
+	    if (_context)
+	    {
+                if (id3.tags.length)
+                    _callback_id3tag(id3.tags, _context);
+                _callback_progress(audioTags, _context);
+                _callback_complete(_context);
+	    }
+	    else
+	    {
+                if (id3.tags.length)
+                    _callback_id3tag(id3.tags);
+                _callback_progress(audioTags);
+                _callback_complete();
+	    }
         }
 
         public function MP3Demuxer(callback_audioselect : Function,
                                    callback_progress : Function,
                                    callback_complete : Function,
                                    callback_error : Function,
-                                   callback_id3tag : Function) : void {
+                                   callback_id3tag : Function,
+				   context: * = null) : void {
             _callback_audioselect = callback_audioselect;
             _callback_progress = callback_progress;
             _callback_complete = callback_complete;
             _callback_error = callback_error;
             _callback_id3tag = callback_id3tag;
+	    _context = context;
         };
 
         public static function probe(data : ByteArray) : Boolean {

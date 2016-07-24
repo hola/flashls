@@ -34,6 +34,7 @@ package org.mangui.hls.demux {
         private var _callback_complete : Function;
         private var _callback_error : Function;
         private var _callback_id3tag : Function;
+	private var _context: *;
 
         /** append new data */
         public function append(data : ByteArray) : void {
@@ -68,7 +69,10 @@ package org.mangui.hls.demux {
             var frames : Vector.<AudioFrame> = AACDemuxer.getFrames(_data, _data.position);
             var adif : ByteArray = getADIF(_data, id3.len);
             if(adif == null && _callback_error != null) {
-                _callback_error(ADTS_NOT_FOUND);
+	        if (_context)
+                    _callback_error(ADTS_NOT_FOUND, _context);
+		else
+		    _callback_error(ADTS_NOT_FOUND);
                 return;
             }
             var adifTag : FLVTag = new FLVTag(FLVTag.AAC_HEADER, id3.timestamp, id3.timestamp, true);
@@ -95,28 +99,42 @@ package org.mangui.hls.demux {
             var audiotracks : Vector.<AudioTrack> = new Vector.<AudioTrack>();
             audiotracks.push(new AudioTrack('AAC ES', AudioTrack.FROM_DEMUX, 0, true, true));
             // report unique audio track. dont check return value as obviously the track will be selected
-            _callback_audioselect(audiotracks);
+	    if (_context)
+            	_callback_audioselect(audiotracks, _context);
+	    else
+	        _callback_audioselect(audiotracks);
             CONFIG::LOGGING {
                 Log.debug("AAC: all tags extracted, callback demux");
             }
             _data = null;
             if(id3.tags.length) {
-                _callback_id3tag(id3.tags);
+	        if (_context)
+                    _callback_id3tag(id3.tags, _context);
+		else
+		    _callback_id3tag(id3.tags);
             }
-            _callback_progress(audioTags);
-            _callback_complete();
+	    if (_context)
+                _callback_progress(audioTags, _context);
+	    else
+	        _callback_progress(audioTags);
+	    if (_context)
+                _callback_complete(_context);
+	    else
+	        _callback_complete();
         }
 
         public function AACDemuxer(callback_audioselect : Function,
                                    callback_progress : Function,
                                    callback_complete : Function,
                                    callback_error : Function,
-                                   callback_id3tag : Function) : void {
+                                   callback_id3tag : Function,
+				   context: * = null) : void {
             _callback_audioselect = callback_audioselect;
             _callback_progress = callback_progress;
             _callback_complete = callback_complete;
             _callback_error = callback_error;
             _callback_id3tag = callback_id3tag;
+	    _context = context;
         };
 
         public static function probe(data : ByteArray) : Boolean {
