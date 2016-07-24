@@ -83,10 +83,8 @@ package org.mangui.hls.loader {
         private var _keyRetryCount : int;
         private var _keyLoadStatus : int;
         /* fragment error/reload */
-        private var _fragLoadErrorDate : Number;
         private var _fragRetryTimeout : Number;
         private var _fragRetryCount : int;
-        private var _fragLoadStatus : int;
         private var _fragSkipCount : int;
         /** reference to previous/current fragment */
         private var _fragPrevious : Fragment;
@@ -168,6 +166,7 @@ package org.mangui.hls.loader {
 		_timer.stop();
 	        return;
             }
+	    var ldr: FragLoaderInfo = _getFirstLoader();
             switch(_loadingState) {
                 // nothing to load, stop fragment loader.
                 case LOADING_STOPPED:
@@ -329,7 +328,7 @@ package org.mangui.hls.loader {
                 // if fragment loading failed
                 case LOADING_FRAGMENT_IO_ERROR:
                     // compare current date and next retry date.
-                    if (getTimer() >= _fragLoadErrorDate) {
+                    if (getTimer() >= ldr.loadErrorDate) {
                         /* try to reload fragment ... */
                         _loadfragment(_fragCurrent);
                         _loadingState = LOADING_IN_PROGRESS;
@@ -512,7 +511,7 @@ package org.mangui.hls.loader {
             OR skip fragment if allowed to
             if not allowed to, report LOADING error
         */
-        private function _fraghandleIOError(message : String) : void {
+        private function _fraghandleIOError(message : String, ldr: FragLoaderInfo) : void {
             var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, _fragCurrent.url, "I/O Error while loading fragment:" + message);
             _hls.dispatchEvent(new HLSEvent(HLSEvent.WARNING, hlsError));
             CONFIG::LOGGING {
@@ -520,7 +519,7 @@ package org.mangui.hls.loader {
             }
             if (HLSSettings.fragmentLoadMaxRetry == -1 || _fragRetryCount < HLSSettings.fragmentLoadMaxRetry) {
                 _loadingState = LOADING_FRAGMENT_IO_ERROR;
-                _fragLoadErrorDate = getTimer() + _fragRetryTimeout;
+                ldr.loadErrorDate = getTimer() + _fragRetryTimeout;
                 CONFIG::LOGGING {
                     Log.warn("retry fragment load in " + _fragRetryTimeout + " ms, count=" + _fragRetryCount);
                 }
@@ -556,7 +555,7 @@ package org.mangui.hls.loader {
                     */
                     if(_hls.type == HLSTypes.LIVE && _fragCurrent.seqnum == level.end_seqnum) {
                         _loadingState = LOADING_FRAGMENT_IO_ERROR;
-                        _fragLoadErrorDate = getTimer() + _fragRetryTimeout;
+                        ldr.loadErrorDate = getTimer() + _fragRetryTimeout;
                         CONFIG::LOGGING {
                             Log.warn("max load retry reached on last fragment of live playlist, retrying loading this one...");
                         }
@@ -590,7 +589,7 @@ package org.mangui.hls.loader {
         }
 
         private function _fragLoadHTTPStatusHandler(event : HTTPStatusEvent) : void {
-	    _loaders[event.target.req_id]._fragLoadStatus = event.status;
+	    _loaders[event.target.req_id].loadStatus = event.status;
         }
 
         private function _fragLoadProgressHandler(event : ProgressEvent) : void {
@@ -735,7 +734,7 @@ package org.mangui.hls.loader {
                     }
                 }
                 // invalid fragment
-                _fraghandleIOError("invalid content received");
+                _fraghandleIOError("invalid content received", ldr);
                 fragData.bytes = null;
                 return;
             }
@@ -790,16 +789,17 @@ package org.mangui.hls.loader {
 
         /** Catch IO and security errors. **/
         private function _fragLoadErrorHandler(event : ErrorEvent) : void {
+	    var ldr: FragLoaderInfo = _loaders[event.target.req_id];
             if (event is SecurityErrorEvent) {
                 var txt : String = "Cannot load fragment: crossdomain access denied:" + event.text;
                 var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_CROSSDOMAIN_ERROR, _fragCurrent.url, txt);
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
             } else {
-	        var loadStatus: Number = _loaders[event.target.req_id]._fragLoadStatus;
+	        var loadStatus: Number = ldr.loadStatus;
                 if (loadStatus == 200) {
                     _fragHandleParsingError("HTTP 2OO but IO error, treat as parsing error");
                 } else {
-                    _fraghandleIOError("HTTP status:" + loadStatus + ",msg:" + event.text);
+                    _fraghandleIOError("HTTP status:" + loadStatus + ",msg:" + event.text, ldr);
                 }
             }
         };
