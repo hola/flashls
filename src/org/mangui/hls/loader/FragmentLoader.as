@@ -83,7 +83,6 @@ package org.mangui.hls.loader {
         private var _keyRetryCount : int;
         private var _keyLoadStatus : int;
         /* fragment error/reload */
-        private var _fragRetryTimeout : Number;
         private var _fragRetryCount : int;
         private var _fragSkipCount : int;
         /** reference to previous/current fragment */
@@ -353,7 +352,11 @@ package org.mangui.hls.loader {
             }
             // reset IO Error when seeking
             _fragRetryCount = _keyRetryCount = 0;
-            _fragRetryTimeout = _keyRetryTimeout = 1000;
+            _keyRetryTimeout = 1000;
+	    for each (var ldr: FragLoaderInfo in _loaders)
+	    {
+	       ldr.retryTimeout = 1000;
+	    }
             _loadingState = LOADING_IDLE;
             _seekPosition = position;
             _fragmentFirstLoaded = false;
@@ -370,7 +373,11 @@ package org.mangui.hls.loader {
             }
             // reset IO Error when seeking
             _fragRetryCount = _keyRetryCount = 0;
-            _fragRetryTimeout = _keyRetryTimeout = 1000;
+            _keyRetryTimeout = 1000;
+	    for each (var ldr: FragLoaderInfo in _loaders)
+	    {
+	       ldr.retryTimeout = 1000;
+	    }
             _loadingState = LOADING_IDLE;
             _fragmentFirstLoaded = true;
             _fragSkipping = false;
@@ -450,7 +457,7 @@ package org.mangui.hls.loader {
             OR skip fragment if allowed to
             if not allowed to, report PARSING error
         */
-        private function _fragHandleParsingError(message : String) : void {
+        private function _fragHandleParsingError(message : String, ldr: FragLoaderInfo) : void {
             var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_PARSING_ERROR, _fragCurrent.url, "Parsing Error :" + message);
             var level : Level = _levels[_fragCurrent.level];
             CONFIG::LOGGING {
@@ -466,7 +473,7 @@ package org.mangui.hls.loader {
                 }
                 level.redundantStreamId++;
                 _fragRetryCount = 0;
-                _fragRetryTimeout = 1000;
+                ldr.retryTimeout = 1000;
                 _loadingState = LOADING_IDLE;
                 // dispatch event to force redundant level loading
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_SWITCH, _fragCurrent.level));
@@ -489,7 +496,7 @@ package org.mangui.hls.loader {
                 // send skipped FLV tag to StreamBuffer
                 _streamBuffer.appendTags(HLSLoaderTypes.FRAGMENT_MAIN,_fragCurrent.level,_fragCurrent.seqnum ,tags,_fragCurrent.data.pts_start_computed, _fragCurrent.data.pts_start_computed + 1000*_fragCurrent.duration, _fragCurrent.continuity, _fragCurrent.start_time);
                 _fragRetryCount = 0;
-                _fragRetryTimeout = 1000;
+                ldr.retryTimeout = 1000;
                 _fragPrevious = _fragCurrent;
                 _fragSkipping = true;
                 _fragSkipCount++;
@@ -519,13 +526,13 @@ package org.mangui.hls.loader {
             }
             if (HLSSettings.fragmentLoadMaxRetry == -1 || _fragRetryCount < HLSSettings.fragmentLoadMaxRetry) {
                 _loadingState = LOADING_FRAGMENT_IO_ERROR;
-                ldr.loadErrorDate = getTimer() + _fragRetryTimeout;
+                ldr.loadErrorDate = getTimer() + ldr.retryTimeout;
                 CONFIG::LOGGING {
-                    Log.warn("retry fragment load in " + _fragRetryTimeout + " ms, count=" + _fragRetryCount);
+                    Log.warn("retry fragment load in " + ldr.retryTimeout + " ms, count=" + _fragRetryCount);
                 }
                 /* exponential increase of retry timeout, capped to fragmentLoadMaxRetryTimeout */
                 _fragRetryCount++;
-                _fragRetryTimeout = Math.min(HLSSettings.fragmentLoadMaxRetryTimeout, 2 * _fragRetryTimeout);
+                ldr.retryTimeout = Math.min(HLSSettings.fragmentLoadMaxRetryTimeout, 2 * ldr.retryTimeout);
             } else {
                 var level : Level = _levels[_fragCurrent.level];
                 // if we have redundant streams left for that level, switch to it
@@ -535,7 +542,7 @@ package org.mangui.hls.loader {
                     }
                     level.redundantStreamId++;
                     _fragRetryCount = 0;
-                    _fragRetryTimeout = 1000;
+                    ldr.retryTimeout = 1000;
                     _loadingState = LOADING_IDLE;
                     // dispatch event to force redundant level loading
                     _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_SWITCH, _fragCurrent.level));
@@ -555,13 +562,13 @@ package org.mangui.hls.loader {
                     */
                     if(_hls.type == HLSTypes.LIVE && _fragCurrent.seqnum == level.end_seqnum) {
                         _loadingState = LOADING_FRAGMENT_IO_ERROR;
-                        ldr.loadErrorDate = getTimer() + _fragRetryTimeout;
+                        ldr.loadErrorDate = getTimer() + ldr.retryTimeout;
                         CONFIG::LOGGING {
                             Log.warn("max load retry reached on last fragment of live playlist, retrying loading this one...");
                         }
                         /* exponential increase of retry timeout, capped to fragmentLoadMaxRetryTimeout */
                         _fragRetryCount++;
-                        _fragRetryTimeout = Math.min(HLSSettings.fragmentLoadMaxRetryTimeout, 2 * _fragRetryTimeout);
+                        ldr.retryTimeout = Math.min(HLSSettings.fragmentLoadMaxRetryTimeout, 2 * ldr.retryTimeout);
                     } else {
                         CONFIG::LOGGING {
                             Log.warn("max fragment load retry reached, skip fragment and load next one.");
@@ -571,7 +578,7 @@ package org.mangui.hls.loader {
                         // send skipped FLV tag to StreamBuffer
                         _streamBuffer.appendTags(HLSLoaderTypes.FRAGMENT_MAIN,_fragCurrent.level,_fragCurrent.seqnum ,tags,_fragCurrent.data.pts_start_computed, _fragCurrent.data.pts_start_computed + 1000*_fragCurrent.duration, _fragCurrent.continuity, _fragCurrent.start_time);
                         _fragRetryCount = 0;
-                        _fragRetryTimeout = 1000;
+                        ldr.retryTimeout = 1000;
                         _fragPrevious = _fragCurrent;
                         _fragSkipping = true;
                         _fragSkipCount++;
@@ -686,7 +693,7 @@ package org.mangui.hls.loader {
                 bytes.position = bytes.length;
                 bytes.writeBytes(data);
                 data = bytes;
-                _demux = DemuxHelper.probe(data, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false);
+                _demux = DemuxHelper.probe(data, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false, ldr);
             }
             if (_demux) {
                 _demux.append(data);
@@ -715,7 +722,7 @@ package org.mangui.hls.loader {
                 var bytes : ByteArray = new ByteArray();
                 fragData.bytes.position = _fragCurrent.byterange_start_offset;
                 fragData.bytes.readBytes(bytes, 0, _fragCurrent.byterange_end_offset - _fragCurrent.byterange_start_offset);
-                _demux = DemuxHelper.probe(bytes, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false);
+                _demux = DemuxHelper.probe(bytes, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false, ldr);
                 if (_demux) {
                     bytes.position = 0;
                     _demux.append(bytes);
@@ -797,7 +804,7 @@ package org.mangui.hls.loader {
             } else {
 	        var loadStatus: Number = ldr.loadStatus;
                 if (loadStatus == 200) {
-                    _fragHandleParsingError("HTTP 2OO but IO error, treat as parsing error");
+                    _fragHandleParsingError("HTTP 2OO but IO error, treat as parsing error", ldr);
                 } else {
                     _fraghandleIOError("HTTP status:" + loadStatus + ",msg:" + event.text, ldr);
                 }
@@ -1030,11 +1037,11 @@ package org.mangui.hls.loader {
             _timer.start();
         };
 
-        private function _fragParsingErrorHandler(error : String) : void {
+        private function _fragParsingErrorHandler(error : String, ldr: FragLoaderInfo) : void {
             // abort any load in progress
             _stop_load();
             // then try to overcome parsing error
-            _fragHandleParsingError(error);
+            _fragHandleParsingError(error, ldr);
         }
 
         private function _fragParsingID3TagHandler(id3_tags : Vector.<ID3Tag>) : void {
@@ -1152,7 +1159,7 @@ package org.mangui.hls.loader {
         }
 
         /** triggered when demux has completed fragment parsing **/
-        private function _fragParsingCompleteHandler() : void {
+        private function _fragParsingCompleteHandler(ldr: FragLoaderInfo) : void {
             if (_loadingState == LOADING_IDLE)
                 return;
             var hlsError : HLSError;
@@ -1160,12 +1167,12 @@ package org.mangui.hls.loader {
             var fragLevelIdx : int = _fragCurrent.level;
             if ((_demux.audioExpected && !fragData.audio_found) && (_demux.videoExpected && !fragData.video_found)) {
                 // handle it like a parsing error
-                _fragHandleParsingError("error parsing fragment, no tag found");
+                _fragHandleParsingError("error parsing fragment, no tag found", ldr);
                 return;
             }
             // parsing complete, reset retry and skip counters
             _fragRetryCount = 0;
-            _fragRetryTimeout = 1000;
+            ldr.retryTimeout = 1000;
             _fragSkipCount = 0;
             CONFIG::LOGGING {
                 if (fragData.audio_found) {
