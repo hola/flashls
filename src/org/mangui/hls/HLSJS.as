@@ -9,6 +9,7 @@ package org.mangui.hls
     import org.mangui.hls.model.Level;
     import org.mangui.hls.model.Fragment;
     import flash.utils.setTimeout;
+    import flash.net.NetStreamAppendBytesAction;
 
     public class HLSJS
     {
@@ -18,6 +19,7 @@ package org.mangui.hls
         private static var _url:String;
         private static var _state:String;
         private static var _hls:HLS;
+	private static var _silence: Boolean = false;
 
         public static function init():void{
             if (_inited || !ZExternalInterface.avail())
@@ -51,6 +53,10 @@ package org.mangui.hls
                 hola_setBandwidth);
             ExternalInterface.addCallback("hola_hls_get_type",
                 hola_hls_get_type);
+            ExternalInterface.addCallback("hola_hls_load_fragment", hola_hls_load_fragment);
+	    ExternalInterface.addCallback("hola_hls_abort_fragment", hola_hls_abort_fragment);
+	    ExternalInterface.addCallback("hola_hls_load_level", hola_hls_load_level);
+	    ExternalInterface.addCallback('hola_hls_flush_stream', hola_hls_flush_stream);
         }
 
         public static function HLSnew(hls:HLS):void{
@@ -141,6 +147,8 @@ package org.mangui.hls
 	}
 
         private static function on_event(e:HLSEvent):void{
+	    if (_silence)
+	        return;
             JSAPI.postMessage('flashls.'+e.type, {url: e.url, level: e.level,
 		duration: e.duration, levels: e.levels, error: e.error,
 		loadMetrics: e.loadMetrics, playMetrics: e.playMetrics,
@@ -185,6 +193,36 @@ package org.mangui.hls
             return _hls.type;
         }
 
+        private static function hola_hls_load_fragment(level: Number, frag: Number, url: String): Object
+	{
+	    if (HSettings.gets('mode')!='hola_adaptive')
+	        return 0;
+	    return _hls.loadFragment(level, frag, url);
+        }
+
+	private static function hola_hls_flush_stream(): void
+	{
+	    _silence = true;
+	    _hls.stream.close();
+	    _hls.stream.play();
+            _hls.stream.pause();
+	    _silence = false;
+	}
+
+        private static function hola_hls_abort_fragment(req_id: Number): void
+	{
+	    if (HSettings.gets('mode')!='hola_adaptive')
+	        return;
+	    _hls.abortFragment(req_id);
+        }
+
+	private static function hola_hls_load_level(level: Number): void
+	{
+	    if (HSettings.gets('mode')!='hola_adaptive')
+	        return;
+	    _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_SWITCH, level));
+        }
+
         private static function level_to_object(l: Level): Object
 	{
             var fragments: Array = [];
@@ -195,7 +233,7 @@ package org.mangui.hls
 		    duration: fragment.duration, seqnum: fragment.seqnum});
 	    }	
 	    return {url: l.url, bitrate: l.bitrate, fragments: fragments,
-	        index: l.index};
+	        index: l.index, width: l.width, height: l.height, audio: l.audio};
 	}
 
         private static function hola_hls_get_levels():Object{

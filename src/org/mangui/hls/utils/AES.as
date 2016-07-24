@@ -6,6 +6,7 @@
     import flash.display.DisplayObject;
     import flash.utils.ByteArray;
     import flash.events.Event;
+    import flash.external.ExternalInterface;
 
     /**
      * Contains Utility functions for AES-128 CBC Decryption
@@ -34,7 +35,9 @@
         /** display object used for ENTER_FRAME listener */
         private var _displayObject : DisplayObject;
 
-        public function AES(displayObject : DisplayObject, key : ByteArray, iv : ByteArray, notifyprogress : Function, notifycomplete : Function) {
+	private var _context: *;
+
+        public function AES(displayObject : DisplayObject, key : ByteArray, iv : ByteArray, notifyprogress : Function, notifycomplete : Function, ctx: * = null) {
             // _keyArray = key;
             _key = new FastAESKey(key);
             iv.position = 0;
@@ -45,6 +48,7 @@
             _data = new ByteArray();
             _dataComplete = false;
             _progress = notifyprogress;
+	    _context = ctx;
             _complete = notifycomplete;
             _readPosition = 0;
             _writePosition = 0;
@@ -105,7 +109,10 @@
                     _readPosition += CHUNK_SIZE;
                     decryptdata = _decryptCBC(_data, CHUNK_SIZE);
                 }
-                _progress(decryptdata);
+		if (_context)
+                    _progress(decryptdata, _context);
+		else
+		    _progress(decryptdata);
                 return true;
             } else {
                 if (_dataComplete) {
@@ -113,7 +120,10 @@
                         Log.debug("AES:data+decrypt completed, callback");
                     }
                     // callback
-                    _complete();
+		    if (_context)
+                        _complete(_context);
+		    else
+		        _complete();
                     _displayObject.removeEventListener(Event.ENTER_FRAME, _decryptTimer);
                 }
                 return false;

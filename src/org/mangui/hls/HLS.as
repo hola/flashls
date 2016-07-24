@@ -81,6 +81,16 @@ package org.mangui.hls {
             return false;
         }
 
+        public function loadFragment(level: Number, frag: Number, url: String): Object
+	{
+	    return _streamBuffer.loadFragment(level, frag, url);
+	}
+
+        public function abortFragment(req_id: Number): void
+	{
+	    _streamBuffer.abortFragment(req_id);
+	}
+
         private function _levelSwitchHandler(event : HLSEvent) : void {
             _level = event.level;
         };

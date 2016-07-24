@@ -121,6 +121,16 @@ package org.mangui.hls.stream {
             flushBuffer();
         }
 
+        public function loadFragment(level: Number, frag: Number, url: String): Object
+	{
+	    return _fragmentLoader.loadFragment(level, frag, url);
+	}
+
+        public function abortFragment(req_id: Number): void
+	{
+	    _fragmentLoader.abortFragment(req_id);
+	}
+
         /*
          * if requested position is available in StreamBuffer, trim buffer
          * and inject from that point
