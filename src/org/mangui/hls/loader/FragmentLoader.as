@@ -82,8 +82,6 @@ package org.mangui.hls.loader {
         private var _keyRetryTimeout : Number;
         private var _keyRetryCount : int;
         private var _keyLoadStatus : int;
-        /** reference to previous/current fragment */
-        private var _fragPrevious : Fragment;
         /* loading state variable */
         private var _loadingState : int;
 
@@ -92,6 +90,8 @@ package org.mangui.hls.loader {
 
 	// XXX marka: fragSkipping is used only at main loop, that is disabled in hap mode, dont need to keep it in loaderInfo
         private var _fragSkipping : Boolean;
+	// XXX marka: fragPrevious is used only at main loop, that is disabled in hap mode, dont need to keep it in loaderInfo
+        private var _fragPrevious : Fragment;
         private var _fragSkipCount : int;
         private static const LOADING_STOPPED : int = -1;
         private static const LOADING_IDLE : int = 0;
@@ -1279,7 +1279,6 @@ class FragLoaderInfo
     public var retryCount: int;
     public var retryTimeout: Number;
     public var frag: Fragment;
-    public var prevFrag: Fragment;
     public var metrics: HLSLoadMetrics;
 
     public function get id(): String
