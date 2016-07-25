@@ -209,11 +209,11 @@ package org.mangui.hls
 	    _silence = false;
 	}
 
-        private static function hola_hls_abort_fragment(req_id: Number): void
+        private static function hola_hls_abort_fragment(ldr_id: String): void
 	{
 	    if (HSettings.gets('mode')!='hola_adaptive')
 	        return;
-	    _hls.abortFragment(req_id);
+	    _hls.abortFragment(ldr_id);
         }
 
 	private static function hola_hls_load_level(level: Number): void

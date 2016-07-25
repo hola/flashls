@@ -66,14 +66,14 @@ package org.mangui.hls.loader {
         private var _keyRetryCount : int;
         private var _keyLoadStatus : int;
 
-	private var _loaders: Array = [];
-	private var _req2ldr: Object = {};
+	private var _loaders: Object = {};
+	private var _ldr_id: Number = 1;
 
         private var _fragSkipCount : int;
 
         private function ldr_from_req(loader: JSURLStream): FragLoaderInfo
 	{
-	    return _loaders[_req2ldr[loader.req_id]];
+	    return _loaders[loader.req_id];
 	}
 
         /** Create the loader. **/
@@ -149,12 +149,12 @@ package org.mangui.hls.loader {
             }
             var hlsError : HLSError;
 	    var pendingLoaders: Array = [], decrypt_url: String;
-	    for (var i: Number = 0, len: Number = _loaders.length; i < len; i++)
+	    for (var ldr_id: String in _loaders)
 	    {
-	        var ldr: FragLoaderInfo = _loaders[i];
+	        var ldr: FragLoaderInfo = _loaders[ldr_id];
 	        if (ldr.pending)
 		{
-		    pendingLoaders.push(i);
+		    pendingLoaders.push(ldr_id);
 		    decrypt_url = ldr.frag.decrypt_url;
 		}
 	    }
@@ -168,9 +168,9 @@ package org.mangui.hls.loader {
 		if (decrypt_url)
                     _keymap[decrypt_url] = keyData;
                 // now load fragment
-    		for each (var idx: Number in pendingLoaders)
+    		for each (ldr_id in pendingLoaders)
 		{
-		    ldr = _loaders[idx];
+		    ldr = _loaders[ldr_id];
 		    ldr.pending = false;
                     try {
 		        CONFIG::LOGGING {
@@ -179,7 +179,7 @@ package org.mangui.hls.loader {
 			ldr.frag.data.bytes = null;
 			_hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADING, ldr.frag.url));
 		        ldr.loader.load(new URLRequest(ldr.frag.url));
-			_req2ldr[ldr.loader.req_id] = idx;
+			ldr.loader.req_id = ldr_id;
                     } catch (error : Error) {
                         hlsError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, ldr.frag.url, error.message);
                         _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
@@ -514,7 +514,7 @@ package org.mangui.hls.loader {
                     fragData.bytes = null;
 		}
 	    }
-	    _loaders = [];
+	    _loaders = {};
         }
 
         /** Catch IO and security errors. **/
@@ -546,9 +546,9 @@ package org.mangui.hls.loader {
             }
         };
 
-	public function abortFragment(req_id: Number): void
+	public function abortFragment(ldr_id: String): void
 	{
-	    ExternalInterface.call('console.log', 'XXX frag abort, req_id = '+req_id);
+	    ExternalInterface.call('console.log', 'XXX frag abort, ldr_id = '+ldr_id);
 	    _stop_load();
 	}
 
@@ -558,9 +558,9 @@ package org.mangui.hls.loader {
 	    var f: Fragment = levelObj.getFragmentfromSeqNum(frag);
             var newFrag: Fragment = new Fragment(url, f.duration, f.level, f.seqnum, f.start_time, f.continuity, f.program_date,
 	        f.decrypt_url, f.decrypt_iv, f.byterange_start_offset, f.byterange_end_offset, f.tag_list);
-	    var req_id: String = _loadfragment(newFrag);
-	    ExternalInterface.call('console.log', 'XXX frag request created: [level '+f.level+'] frag '+f.seqnum+', req_id = '+req_id);
-	    return {id: req_id};
+	    var ldr_id: String = _loadfragment(newFrag);
+	    ExternalInterface.call('console.log', 'XXX frag request created: [level '+f.level+'] frag '+f.seqnum+', ldr_id = '+ldr_id);
+	    return {id: ldr_id};
 	}
 
         private function _loadfragment(frag : Fragment) : * {
@@ -590,6 +590,7 @@ package org.mangui.hls.loader {
             ldr.metrics.loading_request_time = getTimer();
             ldr.frag = frag;
             frag.data.auto_level = _hls.autoLevel;
+	    var ldr_id: String = 'hap'+(_ldr_id++);
             if (frag.decrypt_url != null) {
                 if (_keymap[frag.decrypt_url] == undefined) {
                     // load key
@@ -598,9 +599,9 @@ package org.mangui.hls.loader {
                     }
 		    ExternalInterface.call('console.log', 'XXX load key '+frag.decrypt_url);
 		    ldr.pending = true;
-		    _loaders.push(ldr);
+		    _loaders[ldr_id] = ldr;
                     _keystreamloader.load(new URLRequest(frag.decrypt_url));
-                    return _loaders.length - 1;
+                    return ldr_id;
                 }
             }
             try {
@@ -611,9 +612,8 @@ package org.mangui.hls.loader {
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADING, frag.url));
 		ExternalInterface.call('console.log', 'XXX frag requested: [level '+frag.level+'] frag '+frag.seqnum);
                 ldr.loader.load(new URLRequest(frag.url));
-		var ldr_id: Number = _loaders.length;
-		_req2ldr[ldr.loader.req_id] = ldr_id;
-		_loaders.push(ldr);
+		ldr.loader.req_id = ldr_id;
+		_loaders[ldr_id] = ldr;
 		return ldr_id;
             } catch (error : Error) {
                 var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, frag.url, error.message);

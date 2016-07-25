@@ -146,9 +146,9 @@ package org.mangui.hls.stream {
 	    return (_fragmentLoader as HolaFragmentLoader).loadFragment(level, frag, url);
 	}
 
-        public function abortFragment(req_id: Number): void
+        public function abortFragment(ldr_id: String): void
 	{
-	    (_fragmentLoader as HolaFragmentLoader).abortFragment(req_id);
+	    (_fragmentLoader as HolaFragmentLoader).abortFragment(ldr_id);
 	}
 
         /*

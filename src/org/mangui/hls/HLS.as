@@ -86,9 +86,9 @@ package org.mangui.hls {
 	    return _streamBuffer.loadFragment(level, frag, url);
 	}
 
-        public function abortFragment(req_id: Number): void
+        public function abortFragment(ldr_id: String): void
 	{
-	    _streamBuffer.abortFragment(req_id);
+	    _streamBuffer.abortFragment(ldr_id);
 	}
 
         private function _levelSwitchHandler(event : HLSEvent) : void {
