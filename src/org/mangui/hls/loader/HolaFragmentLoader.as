@@ -596,7 +596,8 @@ package org.mangui.hls.loader {
                     CONFIG::LOGGING {
                         Log.debug("loading key:" + frag.decrypt_url);
                     }
-		    ExternalInterface.call('console.log', 'XXX _loadfragment: load key '+frag.decrypt_url);
+		    ExternalInterface.call('console.log', 'XXX load key '+frag.decrypt_url);
+		    ldr.pending = true;
 		    _loaders.push(ldr);
                     _keystreamloader.load(new URLRequest(frag.decrypt_url));
                     return _loaders.length - 1;
