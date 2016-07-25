@@ -100,18 +100,21 @@
 	    }
         }
 
+        public function set context(context: *): void
+	{
+	    _context = context;
+	}
+
         public function MP3Demuxer(callback_audioselect : Function,
                                    callback_progress : Function,
                                    callback_complete : Function,
                                    callback_error : Function,
-                                   callback_id3tag : Function,
-				   context: * = null) : void {
+                                   callback_id3tag : Function) : void {
             _callback_audioselect = callback_audioselect;
             _callback_progress = callback_progress;
             _callback_complete = callback_complete;
             _callback_error = callback_error;
             _callback_id3tag = callback_id3tag;
-	    _context = context;
         };
 
         public static function probe(data : ByteArray) : Boolean {

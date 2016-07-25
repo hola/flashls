@@ -104,14 +104,18 @@ package org.mangui.hls.demux {
             return false;
         }
 
+        public function set context(context: *): void
+	{
+	    _context = context;
+	}
+
         /** Transmux the M2TS file into an FLV file. **/
         public function TSDemuxer(callback_audioselect : Function,
                                   callback_progress : Function,
                                   callback_complete : Function,
                                   callback_error : Function,
                                   callback_videometadata : Function,
-                                  audioOnly : Boolean,
-				  context: * = null) {
+                                  audioOnly : Boolean) {
             _avcc = null;
             _curAudioPES = null;
             _curVideoPES = null;
@@ -133,7 +137,6 @@ package org.mangui.hls.demux {
             _timer = new Timer(0, 0);
             _audioOnly = audioOnly;
             _audioFound = false;
-	    _context = context;
             _audioSelected = true;
         };
 

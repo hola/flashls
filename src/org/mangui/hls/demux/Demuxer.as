@@ -14,5 +14,7 @@
         function  get audioExpected() : Boolean;
 
         function  get videoExpected() : Boolean;
+
+	function set context(context: *): void;
     }
 }

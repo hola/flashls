@@ -408,6 +408,7 @@ package org.mangui.hls.loader {
             CONFIG::LOGGING {
                 Log.debug("Loading       duration/RTT/length/speed:" + _loading_duration + "/" + (ldr.metrics.loading_begin_time - ldr.metrics.loading_request_time) + "/" + ldr.metrics.size + "/" + Math.round((8000 * ldr.metrics.size / _loading_duration) / 1024) + " kb/s");
             }
+	    _demux.context = ldr;
             if (fragData.decryptAES) {
                 fragData.decryptAES.notifycomplete();
             } else {
@@ -440,7 +441,8 @@ package org.mangui.hls.loader {
                 bytes.position = bytes.length;
                 bytes.writeBytes(data);
                 data = bytes;
-                _demux = DemuxHelper.probe(data, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false, ldr);
+                _demux = DemuxHelper.probe(data, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false);
+		_demux.context = ldr;
             }
             if (_demux) {
                 _demux.append(data);
@@ -467,8 +469,9 @@ package org.mangui.hls.loader {
                 var bytes : ByteArray = new ByteArray();
                 fragData.bytes.position = ldr.frag.byterange_start_offset;
                 fragData.bytes.readBytes(bytes, 0, ldr.frag.byterange_end_offset - ldr.frag.byterange_start_offset);
-                _demux = DemuxHelper.probe(bytes, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false, ldr);
+                _demux = DemuxHelper.probe(bytes, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false);
                 if (_demux) {
+		    _demux.context = ldr;
                     bytes.position = 0;
                     _demux.append(bytes);
                 }
@@ -570,8 +573,7 @@ package org.mangui.hls.loader {
             var newFrag: Fragment = new Fragment(url, f.duration, f.level, f.seqnum, f.start_time, f.continuity, f.program_date,
 	        f.decrypt_url, f.decrypt_iv, f.byterange_start_offset, f.byterange_end_offset, f.tag_list);
  	    ExternalInterface.call('console.log', 'XXX frag request created: [level '+f.level+'] frag '+f.seqnum);
-	    var ldr_id: String = _loadfragment(newFrag);
-	    return {id: ldr_id};
+	    return {id: _loadfragment(newFrag)};
 	}
 
         private function _loadfragment(frag : Fragment) : * {
@@ -737,7 +739,7 @@ package org.mangui.hls.loader {
                 hlsError = new HLSError(HLSError.OTHER_ERROR, ldr.frag.url, error.message);
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
             }
-   	    ExternalInterface.call('console.log', 'XXX frag completed: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum);
+   	    ExternalInterface.call('console.log', 'XXX frag completed: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum+', req_id = '+ldr.loader.req_id);
 	    free_ldr(ldr);
         }
     }
