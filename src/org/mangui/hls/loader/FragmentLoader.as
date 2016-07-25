@@ -36,7 +36,7 @@ package org.mangui.hls.loader {
         import org.mangui.hls.utils.Hex;
     }
     /** Class that fetches fragments. **/
-    public class FragmentLoader {
+    public class FragmentLoader implements FragmentLoaderInterface {
         /** Reference to the HLS controller. **/
         private var _hls : HLS;
         /** reference to auto level manager */

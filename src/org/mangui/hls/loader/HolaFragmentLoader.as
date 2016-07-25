@@ -41,7 +41,7 @@ package org.mangui.hls.loader {
     }
 
     /** Class that fetches fragments. **/
-    public class HolaFragmentLoader {
+    public class HolaFragmentLoader implements FragmentLoaderInterface {
         /** Reference to the HLS controller. **/
         private var _hls : HLS;
         /** reference to auto level manager */

@@ -20,7 +20,9 @@ package org.mangui.hls.stream {
     import org.mangui.hls.HLS;
     import org.mangui.hls.HLSSettings;
     import org.mangui.hls.loader.AltAudioFragmentLoader;
-    import org.mangui.hls.loader.FragmentLoader;
+//    import org.mangui.hls.loader.FragmentLoader;
+    import org.mangui.hls.loader.FragmentLoaderInterface;
+    import org.mangui.hls.loader.HolaFragmentLoader;
     import org.mangui.hls.model.AudioTrack;
     import org.mangui.hls.model.Fragment;
     import org.mangui.hls.model.Level;
@@ -35,7 +37,7 @@ package org.mangui.hls.stream {
      */
     public class StreamBuffer {
         private var _hls : HLS;
-        private var _fragmentLoader : FragmentLoader;
+        private var _fragmentLoader : FragmentLoaderInterface;
         private var _altaudiofragmentLoader : AltAudioFragmentLoader;
         /** Timer used to process FLV tags. **/
         private var _timer : Timer;
@@ -86,7 +88,7 @@ package org.mangui.hls.stream {
 
         public function StreamBuffer(hls : HLS, audioTrackController : AudioTrackController, levelController : LevelController) {
             _hls = hls;
-            _fragmentLoader = new FragmentLoader(hls, audioTrackController, levelController, this);
+            _fragmentLoader = new HolaFragmentLoader(hls, audioTrackController, levelController, this);
             _altaudiofragmentLoader = new AltAudioFragmentLoader(hls, this);
             flushBuffer();
             _timer = new Timer(100, 0);
@@ -123,12 +125,12 @@ package org.mangui.hls.stream {
 
         public function loadFragment(level: Number, frag: Number, url: String): Object
 	{
-	    return _fragmentLoader.loadFragment(level, frag, url);
+	    return (_fragmentLoader as HolaFragmentLoader).loadFragment(level, frag, url);
 	}
 
         public function abortFragment(req_id: Number): void
 	{
-	    _fragmentLoader.abortFragment(req_id);
+	    (_fragmentLoader as HolaFragmentLoader).abortFragment(req_id);
 	}
 
         /*
