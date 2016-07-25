@@ -1045,17 +1045,17 @@ package org.mangui.hls.loader {
             _fragHandleParsingError(error, ldr);
         }
 
-        private function _fragParsingID3TagHandler(id3_tags : Vector.<ID3Tag>) : void {
+        private function _fragParsingID3TagHandler(id3_tags : Vector.<ID3Tag>, ldr: FragLoaderInfo) : void {
             _fragCurrent.data.id3_tags = id3_tags;
         }
 
         /** triggered by demux, it should return the audio track to be parsed */
-        private function _fragParsingAudioSelectionHandler(audioTrackList : Vector.<AudioTrack>) : AudioTrack {
+        private function _fragParsingAudioSelectionHandler(audioTrackList : Vector.<AudioTrack>, ldr: FragLoaderInfo) : AudioTrack {
             return _audioTrackController.audioTrackSelectionHandler(audioTrackList);
         }
 
         /** triggered by demux, it should return video width/height */
-        private function _fragParsingVideoMetadataHandler(width : uint, height : uint) : void {
+        private function _fragParsingVideoMetadataHandler(width : uint, height : uint, ldr: FragLoaderInfo) : void {
             var fragData : FragmentData = _fragCurrent.data;
             if (fragData.video_width == 0) {
                 CONFIG::LOGGING {
