@@ -41,7 +41,7 @@ package org.mangui.hls.loader {
     }
 
     /** Class that fetches fragments. **/
-    public class FragmentLoader {
+    public class HolaFragmentLoader {
         /** Reference to the HLS controller. **/
         private var _hls : HLS;
         /** reference to auto level manager */
@@ -109,7 +109,7 @@ package org.mangui.hls.loader {
 	}
 
         /** Create the loader. **/
-        public function FragmentLoader(hls : HLS, audioTrackController : AudioTrackController, levelController : LevelController, streamBuffer : StreamBuffer) : void {
+        public function HolaFragmentLoader(hls : HLS, audioTrackController : AudioTrackController, levelController : LevelController, streamBuffer : StreamBuffer) : void {
             _hls = hls;
             _levelController = levelController;
             _audioTrackController = audioTrackController;
@@ -343,7 +343,7 @@ package org.mangui.hls.loader {
 
         public function seek(position : Number) : void {
             CONFIG::LOGGING {
-                Log.debug("FragmentLoader:seek(" + position.toFixed(2) + ")");
+                Log.debug("HolaFragmentLoader:seek(" + position.toFixed(2) + ")");
             }
             // reset IO Error when seeking
             _keyRetryCount = 0;
@@ -365,7 +365,7 @@ package org.mangui.hls.loader {
 
         public function seekFromLastFrag(lastFrag : Fragment) : void {
             CONFIG::LOGGING {
-                Log.info("FragmentLoader:seekFromLastFrag(level:" + lastFrag.level + ",SN:" + lastFrag.seqnum + ",PTS:" + lastFrag.data.pts_start +")");
+                Log.info("HolaFragmentLoader:seekFromLastFrag(level:" + lastFrag.level + ",SN:" + lastFrag.seqnum + ",PTS:" + lastFrag.data.pts_start +")");
             }
             // reset IO Error when seeking
             _keyRetryCount = 0;
@@ -1034,7 +1034,7 @@ package org.mangui.hls.loader {
         private function _levelLoadingAbortedHandler(event : HLSEvent) : void {
             _levelNext = event.level-1;
             CONFIG::LOGGING {
-                Log.warn("FragmentLoader:_levelLoadingAbortedHandler:switch down to:" + _levelNext);
+                Log.warn("HolaFragmentLoader:_levelLoadingAbortedHandler:switch down to:" + _levelNext);
             }
             _loadingState = LOADING_IDLE;
             // speed up loading of new playlist/fragment
