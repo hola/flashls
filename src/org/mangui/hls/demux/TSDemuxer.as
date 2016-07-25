@@ -860,15 +860,15 @@ package org.mangui.hls.demux {
                     }
                     break;
                 case _pmtId:
-                    if (_pmtParsed == false || _unknownPIDFound == true) {
-                        CONFIG::LOGGING {
+		    CONFIG::LOGGING {
+                        if (_pmtParsed == false || _unknownPIDFound == true) {
                             if(_pmtParsed == false) {
                                 Log.debug("TS: PMT found");
                             } else {
                                 Log.warn("TS: reparsing PMT, unknown PID found");
                             }
                         }
-                    }
+		    }
                     // always reparse PMT
                     todo -= _parsePMT(stt,data);
                     // if PMT was not parsed before, and some unknown packets have been skipped in between,
