@@ -76,6 +76,14 @@ package org.mangui.hls.loader {
 	    return _loaders[loader.req_id];
 	}
 
+	private function free_ldr(ldr: FragLoaderInfo): void
+	{
+	    if (ldr.loader.connected)
+	        ldr.loader.close();
+	    if (_loaders[ldr.loader.req_id])
+	        delete _loaders[ldr.loader.req_id];
+	}
+
         /** Create the loader. **/
         public function HolaFragmentLoader(hls : HLS, audioTrackController : AudioTrackController, levelController : LevelController, streamBuffer : StreamBuffer) : void {
             _hls = hls;
@@ -179,6 +187,7 @@ package org.mangui.hls.loader {
 			ldr.frag.data.bytes = null;
 			_hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADING, ldr.frag.url));
 		        ldr.loader.load(new URLRequest(ldr.frag.url));
+			ExternalInterface.call('console.log', 'XXX frag requested: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum);
 			ldr.loader.req_id = ldr_id;
                     } catch (error : Error) {
                         hlsError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, ldr.frag.url, error.message);
@@ -265,6 +274,7 @@ package org.mangui.hls.loader {
             } else {
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
             }
+	    free_ldr(ldr);
         }
 
         /* in case of IO error,
@@ -331,6 +341,7 @@ package org.mangui.hls.loader {
                     _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
                 }
             }
+	    free_ldr(ldr);
         }
 
         private function _fragLoadHTTPStatusHandler(event : HTTPStatusEvent) : void {
@@ -481,7 +492,6 @@ package org.mangui.hls.loader {
             }
             fragData.bytes = null;
             _demux.notifycomplete();
-	    ExternalInterface.call('console.log', 'XXX frag completed: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum);
         }
 
         /** stop loading fragment **/
@@ -536,6 +546,7 @@ package org.mangui.hls.loader {
                 var txt : String = "Cannot load fragment: crossdomain access denied:" + event.text;
                 var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_CROSSDOMAIN_ERROR, ldr.frag.url, txt);
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
+		free_ldr(ldr);
             } else {
 	        var loadStatus: Number = ldr.loadStatus;
                 if (loadStatus == 200) {
@@ -558,8 +569,8 @@ package org.mangui.hls.loader {
 	    var f: Fragment = levelObj.getFragmentfromSeqNum(frag);
             var newFrag: Fragment = new Fragment(url, f.duration, f.level, f.seqnum, f.start_time, f.continuity, f.program_date,
 	        f.decrypt_url, f.decrypt_iv, f.byterange_start_offset, f.byterange_end_offset, f.tag_list);
+ 	    ExternalInterface.call('console.log', 'XXX frag request created: [level '+f.level+'] frag '+f.seqnum);
 	    var ldr_id: String = _loadfragment(newFrag);
-	    ExternalInterface.call('console.log', 'XXX frag request created: [level '+f.level+'] frag '+f.seqnum+', ldr_id = '+ldr_id);
 	    return {id: ldr_id};
 	}
 
@@ -726,6 +737,8 @@ package org.mangui.hls.loader {
                 hlsError = new HLSError(HLSError.OTHER_ERROR, ldr.frag.url, error.message);
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
             }
+   	    ExternalInterface.call('console.log', 'XXX frag completed: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum);
+	    free_ldr(ldr);
         }
     }
 }
