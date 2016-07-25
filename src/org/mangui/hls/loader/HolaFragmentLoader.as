@@ -122,6 +122,7 @@ package org.mangui.hls.loader {
             _loadingState = LOADING_STOPPED;
             _manifestJustLoaded = false;
             _keymap = new Object();
+            _levels = hls.levels;
         };
 
         public function dispose() : void {
@@ -950,7 +951,6 @@ package org.mangui.hls.loader {
 	}
 
         private function _loadfragment(frag : Fragment) : * {
-            ExternalInterface.call('console.log', 'XXX FLASH - loadFragment()!');
 	    var is_hap: Boolean = HSettings.gets('mode')=='hola_adaptive';
 	    var ldr: FragLoaderInfo;
             // postpone URLStream init before loading first fragment

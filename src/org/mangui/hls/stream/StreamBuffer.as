@@ -20,12 +20,14 @@ package org.mangui.hls.stream {
     import org.mangui.hls.HLS;
     import org.mangui.hls.HLSSettings;
     import org.mangui.hls.loader.AltAudioFragmentLoader;
-//    import org.mangui.hls.loader.FragmentLoader;
+    import org.mangui.hls.loader.FragmentLoader;
     import org.mangui.hls.loader.FragmentLoaderInterface;
     import org.mangui.hls.loader.HolaFragmentLoader;
     import org.mangui.hls.model.AudioTrack;
     import org.mangui.hls.model.Fragment;
     import org.mangui.hls.model.Level;
+
+    import org.hola.HSettings;
 
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
@@ -37,6 +39,8 @@ package org.mangui.hls.stream {
      */
     public class StreamBuffer {
         private var _hls : HLS;
+	private var _audioTrackController : AudioTrackController;
+	private var _levelController : LevelController;
         private var _fragmentLoader : FragmentLoaderInterface;
         private var _altaudiofragmentLoader : AltAudioFragmentLoader;
         /** Timer used to process FLV tags. **/
@@ -88,7 +92,9 @@ package org.mangui.hls.stream {
 
         public function StreamBuffer(hls : HLS, audioTrackController : AudioTrackController, levelController : LevelController) {
             _hls = hls;
-            _fragmentLoader = new HolaFragmentLoader(hls, audioTrackController, levelController, this);
+	    _audioTrackController = audioTrackController;
+	    _levelController = levelController;
+            _fragmentLoader = new FragmentLoader(hls, audioTrackController, levelController, this);
             _altaudiofragmentLoader = new AltAudioFragmentLoader(hls, this);
             flushBuffer();
             _timer = new Timer(100, 0);
@@ -98,7 +104,18 @@ package org.mangui.hls.stream {
             _hls.addEventListener(HLSEvent.LAST_VOD_FRAGMENT_LOADED, _lastVODFragmentLoadedHandler);
             _hls.addEventListener(HLSEvent.AUDIO_TRACK_SWITCH, _audioTrackChange);
             _hls.addEventListener(HLSEvent.PLAYBACK_COMPLETE, _playbackComplete);
+	    HSettings.subscribe('mode', on_mode_changed);
         }
+
+	private function on_mode_changed(mode: String): void
+	{
+	    if (mode=='hola_adaptive')
+	    {
+	        stop();
+		_fragmentLoader.dispose();
+		_fragmentLoader = new HolaFragmentLoader(_hls, _audioTrackController, _levelController, this);
+	    }
+	}
 
         public function dispose() : void {
             flushBuffer();
@@ -115,6 +132,7 @@ package org.mangui.hls.stream {
             _altaudiofragmentLoader = null;
             _hls = null;
             _timer = null;
+	    HSettings.unsubscribe('mode', on_mode_changed);
         }
 
         public function stop() : void {
