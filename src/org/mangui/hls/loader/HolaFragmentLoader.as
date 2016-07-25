@@ -66,15 +66,14 @@ package org.mangui.hls.loader {
         private var _keyRetryCount : int;
         private var _keyLoadStatus : int;
 
-	private var _loaders: Object;
-	private var _pendingLoaders: Array = [];
+	private var _loaders: Array = [];
+	private var _req2ldr: Object = {};
 
         private var _fragSkipCount : int;
 
-        private function _getFirstLoader(): *
+        private function ldr_from_req(loader: JSURLStream): FragLoaderInfo
 	{
-	    for (var key: String in _loaders)
-	        return _loaders[key];
+	    return _loaders[_req2ldr[loader.req_id]];
 	}
 
         /** Create the loader. **/
@@ -149,7 +148,16 @@ package org.mangui.hls.loader {
                 Log.debug("key loading completed");
             }
             var hlsError : HLSError;
-	    var decrypt_url: String = _pendingLoaders.length ? _pendingLoaders[0].frag.decrypt_url : '';
+	    var pendingLoaders: Array = [], decrypt_url: String;
+	    for (var i: Number = 0, len: Number = _loaders.length; i < len; i++)
+	    {
+	        var ldr: FragLoaderInfo = _loaders[i];
+	        if (ldr.pending)
+		{
+		    pendingLoaders.push(i);
+		    decrypt_url = ldr.frag.decrypt_url;
+		}
+	    }
             // Collect key data
             if ( _keystreamloader.bytesAvailable == 16 ) {
                 // load complete, reset retry counter
@@ -160,9 +168,10 @@ package org.mangui.hls.loader {
 		if (decrypt_url)
                     _keymap[decrypt_url] = keyData;
                 // now load fragment
-    		for (var i: Number = 0, len: Number = _pendingLoaders.length; i < len; i++)
+    		for each (var idx: Number in pendingLoaders)
 		{
-		    var ldr: FragLoaderInfo = _pendingLoaders[i];
+		    ldr = _loaders[idx];
+		    ldr.pending = false;
                     try {
 		        CONFIG::LOGGING {
                             Log.debug("loading fragment:" + ldr.frag.url);
@@ -170,15 +179,14 @@ package org.mangui.hls.loader {
 			ldr.frag.data.bytes = null;
 			_hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADING, ldr.frag.url));
 		        ldr.loader.load(new URLRequest(ldr.frag.url));
-			_loaders[ldr.loader.req_id] = ldr;
+			_req2ldr[ldr.loader.req_id] = idx;
                     } catch (error : Error) {
                         hlsError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, ldr.frag.url, error.message);
                         _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
                     }
 		}
-		_pendingLoaders = [];
             } else {
-                hlsError = new HLSError(HLSError.KEY_PARSING_ERROR, decrypt_url, "invalid key size: received " + _keystreamloader.bytesAvailable + " / expected 16 bytes");
+                hlsError = new HLSError(HLSError.KEY_PARSING_ERROR, decrypt_url||'unknown', "invalid key size: received " + _keystreamloader.bytesAvailable + " / expected 16 bytes");
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
             }
         };
@@ -200,7 +208,16 @@ package org.mangui.hls.loader {
                 _keyRetryCount++;
                 _keyRetryTimeout = Math.min(HLSSettings.keyLoadMaxRetryTimeout, 2 * _keyRetryTimeout);
             } else {
-                var hlsError : HLSError = new HLSError(HLSError.KEY_LOADING_ERROR, _pendingLoaders.length ? _pendingLoaders[0].frag.decrypt_url : 'unknown', "I/O Error :" + message);
+	        var decrypt_url: String;
+	        for each (var ldr: FragLoaderInfo in _loaders)
+		{
+		    if (ldr.pending)
+		    {
+		        decrypt_url = ldr.frag.decrypt_url;
+			break;
+		    }
+		}
+                var hlsError : HLSError = new HLSError(HLSError.KEY_LOADING_ERROR, decrypt_url || 'unknown', "I/O Error :" + message);
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
             }
         }
@@ -317,11 +334,11 @@ package org.mangui.hls.loader {
         }
 
         private function _fragLoadHTTPStatusHandler(event : HTTPStatusEvent) : void {
-	    _loaders[event.target.req_id].loadStatus = event.status;
+	    ldr_from_req(event.target as JSURLStream).loadStatus = event.status;
         }
 
         private function _fragLoadProgressHandler(event : ProgressEvent) : void {
-	    var ldr: FragLoaderInfo = _loaders[event.target.req_id];
+	    var ldr: FragLoaderInfo = ldr_from_req(event.target as JSURLStream);
             var fragData : FragmentData = ldr.frag.data;
             if (fragData.bytes == null) {
                 fragData.bytes = new ByteArray();
@@ -359,7 +376,7 @@ package org.mangui.hls.loader {
 
         /** frag load completed. **/
         private function _fragLoadCompleteHandler(event : Event) : void {
-	    var ldr: FragLoaderInfo = _loaders[event.target.req_id];
+	    var ldr: FragLoaderInfo = ldr_from_req(event.target as JSURLStream);
 	    ExternalInterface.call('console.log', 'XXX frag loaded: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum);
             var fragData : FragmentData = ldr.frag.data;
             if (fragData.bytes == null) {
@@ -497,7 +514,7 @@ package org.mangui.hls.loader {
                     fragData.bytes = null;
 		}
 	    }
-	    _loaders = {};
+	    _loaders = [];
         }
 
         /** Catch IO and security errors. **/
@@ -514,7 +531,7 @@ package org.mangui.hls.loader {
 
         /** Catch IO and security errors. **/
         private function _fragLoadErrorHandler(event : ErrorEvent) : void {
-	    var ldr: FragLoaderInfo = _loaders[event.target.req_id];
+	    var ldr: FragLoaderInfo = ldr_from_req(event.target as JSURLStream);
             if (event is SecurityErrorEvent) {
                 var txt : String = "Cannot load fragment: crossdomain access denied:" + event.text;
                 var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_CROSSDOMAIN_ERROR, ldr.frag.url, txt);
@@ -547,21 +564,18 @@ package org.mangui.hls.loader {
 	}
 
         private function _loadfragment(frag : Fragment) : * {
-	    var is_hap: Boolean = HSettings.gets('mode')=='hola_adaptive';
 	    var ldr: FragLoaderInfo;
             // postpone URLStream init before loading first fragment
-            if (is_hap || !(ldr = _getFirstLoader())) {
-                var urlStreamClass : Class = _hls.URLstream as Class;
-                ldr = new FragLoaderInfo();
-	        ldr.loader = new JSURLStream();
-                ldr.loader.addEventListener(IOErrorEvent.IO_ERROR, _fragLoadErrorHandler);
-                ldr.loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _fragLoadErrorHandler);
-                ldr.loader.addEventListener(ProgressEvent.PROGRESS, _fragLoadProgressHandler);
-                ldr.loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, _fragLoadHTTPStatusHandler);
-                ldr.loader.addEventListener(Event.COMPLETE, _fragLoadCompleteHandler);
-                ldr.retryTimeout = 1000;
-	        ldr.retryCount = 0;
-            }
+            var urlStreamClass : Class = _hls.URLstream as Class;
+            ldr = new FragLoaderInfo();
+	    ldr.loader = new JSURLStream();
+            ldr.loader.addEventListener(IOErrorEvent.IO_ERROR, _fragLoadErrorHandler);
+            ldr.loader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, _fragLoadErrorHandler);
+            ldr.loader.addEventListener(ProgressEvent.PROGRESS, _fragLoadProgressHandler);
+            ldr.loader.addEventListener(HTTPStatusEvent.HTTP_STATUS, _fragLoadHTTPStatusHandler);
+            ldr.loader.addEventListener(Event.COMPLETE, _fragLoadCompleteHandler);
+            ldr.retryTimeout = 1000;
+	    ldr.retryCount = 0;
 	    if (!_keystreamloader)
 	    {
                 _keystreamloader = (new urlStreamClass()) as URLStream;
@@ -583,9 +597,9 @@ package org.mangui.hls.loader {
                         Log.debug("loading key:" + frag.decrypt_url);
                     }
 		    ExternalInterface.call('console.log', 'XXX _loadfragment: load key '+frag.decrypt_url);
-		    _pendingLoaders.push(ldr);
+		    _loaders.push(ldr);
                     _keystreamloader.load(new URLRequest(frag.decrypt_url));
-                    return;
+                    return _loaders.length - 1;
                 }
             }
             try {
@@ -596,11 +610,10 @@ package org.mangui.hls.loader {
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADING, frag.url));
 		ExternalInterface.call('console.log', 'XXX frag requested: [level '+frag.level+'] frag '+frag.seqnum);
                 ldr.loader.load(new URLRequest(frag.url));
-		var req_id: String = ldr.loader.req_id;
-		if (!is_hap)
-		    _loaders = {};
-		_loaders[req_id] = ldr;
-		return req_id;
+		var ldr_id: Number = _loaders.length;
+		_req2ldr[ldr.loader.req_id] = ldr_id;
+		_loaders.push(ldr);
+		return ldr_id;
             } catch (error : Error) {
                 var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, frag.url, error.message);
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
@@ -730,8 +743,5 @@ class FragLoaderInfo
     public var frag: Fragment;
     public var metrics: HLSLoadMetrics;
 
-    public function get id(): String
-    {
-        return loader.req_id;
-    }
+    public var pending: Boolean = false;
 }
