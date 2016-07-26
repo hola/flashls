@@ -15,6 +15,6 @@
 
         function  get videoExpected() : Boolean;
 
-	function set context(context: *): void;
+	function set context(ctx: *): void;
     }
 }

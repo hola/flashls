@@ -104,9 +104,9 @@ package org.mangui.hls.demux {
             return false;
         }
 
-        public function set context(context: *): void
+        public function set context(ctx: *): void
 	{
-	    _context = context;
+	    _context = ctx;
 	}
 
         /** Transmux the M2TS file into an FLV file. **/

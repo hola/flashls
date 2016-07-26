@@ -337,7 +337,8 @@ package org.mangui.hls.loader {
             _fragSkipCount = 0;
             ldr.metrics.loading_end_time = getTimer();
             ldr.metrics.size = fragData.bytesLoaded;
-	    _demux.context = ldr;
+	    if (_demux)
+  	        _demux.context = ldr;
             if (fragData.decryptAES) {
                 fragData.decryptAES.notifycomplete();
             } else {
@@ -380,7 +381,6 @@ package org.mangui.hls.loader {
 
         private function _fragDecryptCompleteHandler(ldr: FragLoaderInfo) : void {
             var fragData : FragmentData = ldr.frag.data;
-
             if (fragData.decryptAES) {
                 fragData.decryptAES = null;
             }
