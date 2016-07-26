@@ -187,7 +187,7 @@ package org.mangui.hls.loader {
 			ldr.frag.data.bytes = null;
 			_hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADING, ldr.frag.url));
 		        ldr.loader.load(new URLRequest(ldr.frag.url));
-			ExternalInterface.call('console.log', 'XXX frag requested: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum);
+			ExternalInterface.call('console.log', 'XXX frag requested: ['+ldr.frag.level+' lvl / '+ldr.frag.seqnum+' sn]');
 			ldr.loader.req_id = ldr_id;
                     } catch (error : Error) {
                         hlsError = new HLSError(HLSError.FRAGMENT_LOADING_ERROR, ldr.frag.url, error.message);
@@ -355,7 +355,7 @@ package org.mangui.hls.loader {
         /** frag load completed. **/
         private function _fragLoadCompleteHandler(event : Event) : void {
 	    var ldr: FragLoaderInfo = ldr_from_req(event.target as JSURLStream);
-	    ExternalInterface.call('console.log', 'XXX frag loaded: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum);
+	    ExternalInterface.call('console.log', 'XXX frag loaded: ['+ldr.frag.level+' lvl / '+ldr.frag.seqnum+' sn]');
             var fragData : FragmentData = ldr.frag.data;
             if (fragData.bytes == null) {
                 _levels[_hls.loadLevel].updateFragment(ldr.frag.seqnum, false);
@@ -501,7 +501,7 @@ package org.mangui.hls.loader {
 	    var f: Fragment = levelObj.getFragmentfromSeqNum(frag);
             var newFrag: Fragment = new Fragment(url, f.duration, f.level, f.seqnum, f.start_time, f.continuity, f.program_date,
 	        f.decrypt_url, f.decrypt_iv, f.byterange_start_offset, f.byterange_end_offset, f.tag_list);
- 	    ExternalInterface.call('console.log', 'XXX frag request created: [level '+f.level+'] frag '+f.seqnum);
+ 	    ExternalInterface.call('console.log', 'XXX frag request created: ['+f.level+' lvl / '+f.seqnum+' sn]');
 	    return {id: _loadfragment(newFrag)};
 	}
 
@@ -553,7 +553,7 @@ package org.mangui.hls.loader {
             try {
                 frag.data.bytes = null;
                 _hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADING, frag.url));
-		ExternalInterface.call('console.log', 'XXX frag requested: [level '+frag.level+'] frag '+frag.seqnum);
+		ExternalInterface.call('console.log', 'XXX frag requested: ['+frag.level+' lvl / '+frag.seqnum+' sn]');
                 ldr.loader.load(new URLRequest(frag.url));
 		ldr.loader.req_id = ldr_id;
 		_loaders[ldr_id] = ldr;
@@ -683,7 +683,7 @@ class FragScheduler
     /** triggered when demux has completed fragment parsing **/
     private function _demuxCompleteHandler() : void
     {
-        ExternalInterface.call('console.log', 'XXX demuxing complete ['+_ldrs[0].frag.level+' / '+_ldrs[0].frag.seqnum+']');
+        ExternalInterface.call('console.log', 'XXX demuxing complete ['+_ldrs[0].frag.level+' lvl / '+_ldrs[0].frag.seqnum+' sn]');
         var frag: Fragment = _ldrs[0].frag;
         var metrics: HLSLoadMetrics = new HLSLoadMetrics(HLSLoaderTypes.FRAGMENT_MAIN);
         metrics.level = frag.level;
@@ -730,7 +730,7 @@ class FragScheduler
             hlsError = new HLSError(HLSError.OTHER_ERROR, frag.url, error.message);
             _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
         }
-        ExternalInterface.call('console.log', 'XXX frag completed: [level '+frag.level+'] frag '+frag.seqnum);
+        ExternalInterface.call('console.log', 'XXX frag completed: ['+frag.level+' lvl / '+frag.seqnum+' sn]');
 	if (_oncomplete != null)
 	    _oncomplete(_ldrs);
     }
@@ -773,14 +773,14 @@ class FragScheduler
 	    if (ldr_offset - _demux_offset == data.length)
 	    {
                 _demux.append(data);
-		// ExternalInterface.call('console.log', 'XXX fast append data to demuxer ['+_ldrs[0].frag.level+' / '+_ldrs[0].frag.seqnum+'] offset '+_demux_offset+', length '+data.length);
+		// ExternalInterface.call('console.log', 'XXX fast append data to demuxer ['+_ldrs[0].frag.level+' lvl / '+_ldrs[0].frag.seqnum+' sn] offset '+_demux_offset+', length '+data.length);
 	    }
 	    else
 	    {
 	        var ba: ByteArray = new ByteArray();
 		ba.writeBytes(data, _demux_offset - old_offset, ldr_offset - _demux_offset);
 		_demux.append(ba);
-		// ExternalInterface.call('console.log', 'XXX slow append data to demuxer ['+_ldrs[0].frag.level+' / '+_ldrs[0].frag.seqnum+'] offset '+_demux_offset+', length '+(ldr_offset - _demux_offset));
+		// ExternalInterface.call('console.log', 'XXX slow append data to demuxer ['+_ldrs[0].frag.level+' lvl / '+_ldrs[0].frag.seqnum+' sn] offset '+_demux_offset+', length '+(ldr_offset - _demux_offset));
 	    }
 	    _demux_offset = ldr_offset;
 	}
