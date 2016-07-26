@@ -24,7 +24,6 @@
         private var _callback_complete : Function;
         private var _callback_error : Function;
         private var _callback_id3tag : Function;
-	private var _context: *;
 
         /** append new data */
         public function append(data : ByteArray) : void {
@@ -76,34 +75,16 @@
             var audiotracks : Vector.<AudioTrack> = new Vector.<AudioTrack>();
             audiotracks.push(new AudioTrack('MP3 ES', AudioTrack.FROM_DEMUX, 0, true,false));
             // report unique audio track. dont check return value as obviously the track will be selected
-	    if (_context)
-                _callback_audioselect(audiotracks, _context);
-	    else
-	        _callback_audioselect(audiotracks);
+	    _callback_audioselect(audiotracks);
             CONFIG::LOGGING {
                 Log.debug("MP3: all tags extracted, callback demux");
             }
             _data = null;
-	    if (_context)
-	    {
-                if (id3.tags.length)
-                    _callback_id3tag(id3.tags, _context);
-                _callback_progress(audioTags, _context);
-                _callback_complete(_context);
-	    }
-	    else
-	    {
-                if (id3.tags.length)
-                    _callback_id3tag(id3.tags);
-                _callback_progress(audioTags);
-                _callback_complete();
-	    }
+            if (id3.tags.length)
+                _callback_id3tag(id3.tags);
+            _callback_progress(audioTags);
+            _callback_complete();
         }
-
-        public function set context(context: *): void
-	{
-	    _context = context;
-	}
 
         public function MP3Demuxer(callback_audioselect : Function,
                                    callback_progress : Function,

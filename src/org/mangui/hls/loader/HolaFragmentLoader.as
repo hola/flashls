@@ -50,8 +50,6 @@ package org.mangui.hls.loader {
         private var _keymap : Object;
         /** requested seek position **/
         private var _seekPosition : Number;
-        /* demux instance */
-        private var _demux : Demuxer;
         /* stream buffer instance **/
         private var _streamBuffer : StreamBuffer;
         /* key error/reload */
@@ -63,12 +61,18 @@ package org.mangui.hls.loader {
 
 	private var _loaders: Object = {};
 	private var _ldr_id: Number = 1;
+	private var _schedulers: Object = {};
 
         private var _fragSkipCount : int;
 
         private function ldr_from_req(loader: JSURLStream): FragLoaderInfo
 	{
 	    return _loaders[loader.req_id];
+	}
+
+	private function sch_from_ldr(ldr: FragLoaderInfo): FragScheduler
+	{
+	    return _schedulers[ldr.frag.level + '/' + ldr.frag.seqnum];
 	}
 
 	private function free_ldr(ldr: FragLoaderInfo): void
@@ -96,22 +100,35 @@ package org.mangui.hls.loader {
             _keymap = new Object();
         }
 
+        private function get_current_scheduler(): *
+	{
+	    var ret: FragScheduler, min: Number;
+	    for (var idx: String in _schedulers)
+	    {
+	        ret = _schedulers[idx];
+	        min = +idx.split('/')[1];
+		break;
+	    }
+	    for (idx in _schedulers)
+	    {
+	        var sn: Number = +idx.split('/')[1];
+		if (sn < min)
+		{
+		    min = sn;
+		    ret = _schedulers[idx];
+		}
+	    }
+	    return ret;
+	}
+
         public function get audioExpected() : Boolean {
-            if (_demux) {
-                return _demux.audioExpected;
-            } else {
-                // always return true in case demux is not yet initialized
-                return true;
-            }
+	    var scheduler: FragScheduler = get_current_scheduler();
+	    return scheduler ? scheduler.audioExpected : true;
         }
 
         public function get videoExpected() : Boolean {
-            if (_demux) {
-                return _demux.videoExpected;
-            } else {
-                // always return true in case demux is not yet initialized
-                return true;
-            }
+	    var scheduler: FragScheduler = get_current_scheduler();
+	    return scheduler ? scheduler.videoExpected : true;
         }
 
         public function seek(position : Number) : void {
@@ -215,31 +232,41 @@ package org.mangui.hls.loader {
             OR skip fragment if allowed to
             if not allowed to, report PARSING error
         */
-        private function _fragHandleParsingError(message : String, ldr: FragLoaderInfo) : void {
-            var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_PARSING_ERROR, ldr.frag.url, "Parsing Error :" + message);
-            var level : Level = _levels[ldr.frag.level];
+        private function _handleParsingError(message : String, ldrs: Array, fragData: FragmentData) : void {
+	    var frag: Fragment = ldrs[0].frag;
+            var hlsError : HLSError = new HLSError(HLSError.FRAGMENT_PARSING_ERROR, frag.url, "Parsing Error :" + message);
+            var level : Level = _levels[frag.level];
             // flush any tags that might have been injected for this fragment
-            _streamBuffer.flushLastFragment(ldr.frag.level, ldr.frag.seqnum);
+            _streamBuffer.flushLastFragment(frag.level, frag.seqnum);
             _hls.dispatchEvent(new HLSEvent(HLSEvent.WARNING, hlsError));
             // if we have redundant streams left for that level, switch to it
-            if(level.redundantStreamId < level.redundantStreamsNb) {
+            if(level.redundantStreamId < level.redundantStreamsNb)
+	    {
                 level.redundantStreamId++;
-                ldr.retryCount = 0;
-                ldr.retryTimeout = 1000;
+		for each (var ldr: FragLoaderInfo in ldrs)
+		{
+                    ldr.retryCount = 0;
+                    ldr.retryTimeout = 1000;
+		}
                 // dispatch event to force redundant level loading
-                _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_SWITCH, ldr.frag.level));
-            } else if(HLSSettings.fragmentLoadSkipAfterMaxRetry == true && _fragSkipCount < HLSSettings.maxSkippedFragments  || HLSSettings.maxSkippedFragments < 0) {
-                var tags : Vector.<FLVTag> = tags = new Vector.<FLVTag>();
-                tags.push(ldr.frag.getSkippedTag());
-                // send skipped FLV tag to StreamBuffer
-                _streamBuffer.appendTags(HLSLoaderTypes.FRAGMENT_MAIN, ldr.frag.level, ldr.frag.seqnum , tags, ldr.frag.data.pts_start_computed, ldr.frag.data.pts_start_computed + 1000*ldr.frag.duration, ldr.frag.continuity, ldr.frag.start_time);
-                ldr.retryCount = 0;
-                ldr.retryTimeout = 1000;
-                _fragSkipCount++;
-            } else {
-                _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
+                _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_SWITCH, frag.level));
             }
-	    free_ldr(ldr);
+	    else if(HLSSettings.fragmentLoadSkipAfterMaxRetry == true && _fragSkipCount < HLSSettings.maxSkippedFragments  || HLSSettings.maxSkippedFragments < 0)
+	    {
+                var tags : Vector.<FLVTag> = tags = new Vector.<FLVTag>();
+                tags.push(frag.getSkippedTag());
+                // send skipped FLV tag to StreamBuffer
+                _streamBuffer.appendTags(HLSLoaderTypes.FRAGMENT_MAIN, frag.level, frag.seqnum , tags, fragData.pts_start_computed, fragData.pts_start_computed + 1000*frag.duration, frag.continuity, frag.start_time);
+		for each (ldr in ldrs)
+		{
+                    ldr.retryCount = 0;
+                    ldr.retryTimeout = 1000;
+		}
+                _fragSkipCount++;
+            } else
+                _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
+	    for each (ldr in ldrs)
+	        free_ldr(ldr);
         }
 
         /* in case of IO error,
@@ -337,8 +364,6 @@ package org.mangui.hls.loader {
             _fragSkipCount = 0;
             ldr.metrics.loading_end_time = getTimer();
             ldr.metrics.size = fragData.bytesLoaded;
-	    if (_demux)
-  	        _demux.context = ldr;
             if (fragData.decryptAES) {
                 fragData.decryptAES.notifycomplete();
             } else {
@@ -347,13 +372,13 @@ package org.mangui.hls.loader {
         }
 
         private function _fragDecryptProgressHandler(data : ByteArray, ldr: FragLoaderInfo) : void {
-            data.position = 0;
-            var fragData : FragmentData = ldr.frag.data;
-            if (ldr.metrics.parsing_begin_time == 0) {
+            if (ldr.metrics.parsing_begin_time == 0)
                 ldr.metrics.parsing_begin_time = getTimer();
-            }
+	    var fragData : FragmentData = ldr.frag.data;
+            data.position = 0;
             var bytes : ByteArray = fragData.bytes;
-            if (ldr.frag.byterange_start_offset != -1) {
+            if (ldr.frag.byterange_start_offset != -1)
+	    {
                 bytes.position = bytes.length;
                 bytes.writeBytes(data);
                 // if we have retrieved all the data, disconnect loader and notify fragment complete
@@ -366,45 +391,41 @@ package org.mangui.hls.loader {
                 /* dont do progressive parsing of segment with byte range option */
                 return;
             }
-            if (_demux == null) {
+	    var scheduler: FragScheduler = sch_from_ldr(ldr);
+            if (!scheduler.is_demux_exists())
+	    {
                 /* probe file type */
                 bytes.position = bytes.length;
                 bytes.writeBytes(data);
                 data = bytes;
-                _demux = DemuxHelper.probe(data, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false);
-		_demux.context = ldr;
+		scheduler.create_demux(data);
             }
-            if (_demux) {
-                _demux.append(data);
-            }
+	    scheduler.append(data, ldr.loader.req_id);
         }
 
         private function _fragDecryptCompleteHandler(ldr: FragLoaderInfo) : void {
             var fragData : FragmentData = ldr.frag.data;
-            if (fragData.decryptAES) {
+            if (fragData.decryptAES)
                 fragData.decryptAES = null;
-            }
+	    var scheduler: FragScheduler = sch_from_ldr(ldr);
             // deal with byte range here
             if (ldr.frag.byterange_start_offset != -1) {
                 var bytes : ByteArray = new ByteArray();
                 fragData.bytes.position = ldr.frag.byterange_start_offset;
                 fragData.bytes.readBytes(bytes, 0, ldr.frag.byterange_end_offset - ldr.frag.byterange_start_offset);
-                _demux = DemuxHelper.probe(bytes, _levels[_hls.loadLevel], _fragParsingAudioSelectionHandler, _fragParsingProgressHandler, _fragParsingCompleteHandler, _fragParsingErrorHandler, _fragParsingVideoMetadataHandler, _fragParsingID3TagHandler, false);
-                if (_demux) {
-		    _demux.context = ldr;
-                    bytes.position = 0;
-                    _demux.append(bytes);
-                }
+		scheduler.create_demux(bytes);
+		bytes.position = 0;
+		scheduler.append(bytes, ldr.loader.req_id);
             }
 
-            if (_demux == null) {
+            if (!scheduler.is_demux_exists()) {
                 // invalid fragment
                 _fraghandleIOError("invalid content received", ldr);
                 fragData.bytes = null;
                 return;
             }
             fragData.bytes = null;
-            _demux.notifycomplete();
+	    scheduler.complete();
         }
 
         /** stop loading fragment **/
@@ -421,10 +442,8 @@ package org.mangui.hls.loader {
             if (_keystreamloader && _keystreamloader.connected) {
                 _keystreamloader.close();
             }
-
-            if (_demux) {
-                _demux.cancel();
-            }
+            for each (var sch: FragScheduler in _schedulers)
+	        sch.stop();
 	    for each (ldr in _loaders)
 	    {
 	        if (ldr.frag)
@@ -463,7 +482,7 @@ package org.mangui.hls.loader {
             } else {
 	        var loadStatus: Number = ldr.loadStatus;
                 if (loadStatus == 200) {
-                    _fragHandleParsingError("HTTP 2OO but IO error, treat as parsing error", ldr);
+                    _handleParsingError("HTTP 2OO but IO error, treat as parsing error", [ldr], ldr.frag.data);
                 } else {
                     _fraghandleIOError("HTTP status:" + loadStatus + ",msg:" + event.text, ldr);
                 }
@@ -487,6 +506,7 @@ package org.mangui.hls.loader {
 	}
 
         private function _loadfragment(frag : Fragment) : * {
+	    var ldr_id: String = 'hap'+(_ldr_id++);
 	    var ldr: FragLoaderInfo;
             // postpone URLStream init before loading first fragment
             var urlStreamClass : Class = _hls.URLstream as Class;
@@ -512,8 +532,14 @@ package org.mangui.hls.loader {
             ldr.metrics.id = frag.seqnum;
             ldr.metrics.loading_request_time = getTimer();
             ldr.frag = frag;
+	    var scheduler: FragScheduler = _schedulers[frag.level+'/'+frag.seqnum];
+	    if (!scheduler)
+	    {
+	        scheduler = _schedulers[frag.level+'/'+frag.seqnum] = new FragScheduler(_audioTrackController, _hls, _levels, _streamBuffer, _schedulerComplete, _schedulerError,
+		    _handleParsingError);
+    	    }
+            scheduler.add_ldr(ldr, ldr_id);
             frag.data.auto_level = _hls.autoLevel;
-	    var ldr_id: String = 'hap'+(_ldr_id++);
             if (frag.decrypt_url != null) {
                 if (_keymap[frag.decrypt_url] == undefined) {
                     // load key
@@ -541,90 +567,43 @@ package org.mangui.hls.loader {
         /** Store the manifest data. **/
         private function _manifestLoadedHandler(event : HLSEvent) : void {
             _levels = event.levels;
-        };
-
-        private function _fragParsingErrorHandler(error : String, ldr: FragLoaderInfo) : void {
-            // abort any load in progress
-            _stop_load();
-            // then try to overcome parsing error
-            _fragHandleParsingError(error, ldr);
         }
 
-        private function _fragParsingID3TagHandler(id3_tags : Vector.<ID3Tag>, ldr: FragLoaderInfo) : void {
-            ldr.frag.data.id3_tags = id3_tags;
-        }
+	private function _schedulerComplete(_ldrs: Array): void
+	{
+	    _fragSkipCount = 0;
+	    for each (var ldr: FragLoaderInfo in _ldrs)
+	        free_ldr(ldr);
+	}
 
-        /** triggered by demux, it should return the audio track to be parsed */
-        private function _fragParsingAudioSelectionHandler(audioTrackList : Vector.<AudioTrack>, ldr: FragLoaderInfo) : AudioTrack {
-            return _audioTrackController.audioTrackSelectionHandler(audioTrackList);
-        }
-
-        /** triggered by demux, it should return video width/height */
-        private function _fragParsingVideoMetadataHandler(width : uint, height : uint, ldr: FragLoaderInfo) : void {
-            var fragData : FragmentData = ldr.frag.data;
-            if (fragData.video_width == 0) {
-                fragData.video_width = width;
-                fragData.video_height = height;
-            }
-        }
-
-        /** triggered when demux has retrieved some tags from fragment **/
-        private function _fragParsingProgressHandler(tags : Vector.<FLVTag>, ldr: FragLoaderInfo) : void {
-            var fragData : FragmentData = ldr.frag.data;
-            fragData.appendTags(tags);
-        }
-
-        /** triggered when demux has completed fragment parsing **/
-        private function _fragParsingCompleteHandler(ldr: FragLoaderInfo) : void {
-            var hlsError : HLSError;
-            var fragData : FragmentData = ldr.frag.data;
-            var fragLevelIdx : int = ldr.frag.level;
-            if ((_demux.audioExpected && !fragData.audio_found) && (_demux.videoExpected && !fragData.video_found)) {
-                // handle it like a parsing error
-                _fragHandleParsingError("error parsing fragment, no tag found", ldr);
-                return;
-            }
-            // parsing complete, reset retry and skip counters
-            ldr.retryCount = 0;
-            ldr.retryTimeout = 1000;
-            _fragSkipCount = 0;
-            // Calculate bandwidth
-            ldr.metrics.parsing_end_time = getTimer();
-            try {
-                var fragLevel : Level = _levels[fragLevelIdx];
-                if (fragData.audio_found || fragData.video_found) {
-                    fragLevel.updateFragment(ldr.frag.seqnum, true, fragData.pts_min, fragData.pts_max + fragData.tag_duration);
-                    // set pts_start here, it might not be updated directly in updateFragment() if this loaded fragment has been removed from a live playlist
-                    fragData.pts_start = fragData.pts_min;
-                    _hls.dispatchEvent(new HLSEvent(HLSEvent.PLAYLIST_DURATION_UPDATED, fragLevel.duration));
-                    if (fragData.tags.length) {
-                        if (fragData.metadata_tag_injected == false) {
-                            fragData.tags.unshift(ldr.frag.getMetadataTag());
-                            fragData.metadata_tag_injected = true;
-                        }
-                        _streamBuffer.appendTags(HLSLoaderTypes.FRAGMENT_MAIN, ldr.frag.level, ldr.frag.seqnum, fragData.tags, fragData.tag_pts_min, fragData.tag_pts_max + fragData.tag_duration, ldr.frag.continuity, ldr.frag.start_time + fragData.tag_pts_start_offset / 1000);
-                        ldr.metrics.duration = fragData.pts_max + fragData.tag_duration - fragData.pts_min;
-                        ldr.metrics.id2 = fragData.tags.length;
-                        _hls.dispatchEvent(new HLSEvent(HLSEvent.TAGS_LOADED, ldr.metrics));
-                        fragData.shiftTags();
-                    }
-                } else {
-                    ldr.metrics.duration = ldr.frag.duration * 1000;
-                }
-                _hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADED, ldr.metrics));
-            } catch (error : Error) {
-                hlsError = new HLSError(HLSError.OTHER_ERROR, ldr.frag.url, error.message);
-                _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
-            }
-   	    ExternalInterface.call('console.log', 'XXX frag completed: [level '+ldr.frag.level+'] frag '+ldr.frag.seqnum+', req_id = '+ldr.loader.req_id);
-	    free_ldr(ldr);
-        }
+        private function _schedulerError(): void
+	{
+	    _stop_load();
+	}
     }
 }
 
-import org.mangui.hls.event.HLSLoadMetrics;
+import org.mangui.hls.model.Level;
 import org.mangui.hls.model.Fragment;
+import org.mangui.hls.model.AudioTrack;
+import org.mangui.hls.model.FragmentData;
+import org.mangui.hls.event.HLSError;
+import org.mangui.hls.event.HLSEvent;
+import org.mangui.hls.event.HLSLoadMetrics;
+import org.mangui.hls.demux.DemuxHelper;
+import org.mangui.hls.demux.Demuxer;
+import org.mangui.hls.demux.ID3Tag;
+import org.mangui.hls.HLS;
+import org.mangui.hls.flv.FLVTag;
+import org.mangui.hls.stream.StreamBuffer;
+import org.mangui.hls.constant.HLSLoaderTypes;
+import org.mangui.hls.controller.AudioTrackController;
+
 import org.hola.JSURLStream;
+
+import flash.utils.ByteArray;
+import flash.utils.getTimer;
+import flash.external.ExternalInterface;
 
 class FragLoaderInfo
 {
@@ -638,3 +617,182 @@ class FragLoaderInfo
 
     public var pending: Boolean = false;
 }
+
+class FragScheduler
+{
+    private var _demux: Demuxer;
+    private var _ldrs: Array = [];
+    private var _offsets: Object = {};
+    private var _demux_offset: Number = 0;
+
+    private var _fragData: FragmentData;
+
+    private var _audioTrackController: AudioTrackController;
+    private var _oncomplete: Function;
+    private var _onerror: Function;
+    private var _hls: HLS;
+    private var _levels: Vector.<Level>;
+    private var _streamBuffer: StreamBuffer;
+    private var _handleParsingError: Function;
+
+    public function FragScheduler(audioTrackController: AudioTrackController, hls: HLS, levels: Vector.<Level>, streamBuffer: StreamBuffer, oncomplete: Function, onerror: Function,
+        handleParsingError: Function)
+    {
+        _audioTrackController = audioTrackController;
+	_hls = hls;
+	_oncomplete = oncomplete;
+	_onerror = onerror;
+	_levels = levels;
+	_streamBuffer = streamBuffer;
+	_handleParsingError = handleParsingError;
+    }
+
+    public function stop(): void
+    {
+        _demux.cancel();
+    }
+
+    public function add_ldr(ldr: FragLoaderInfo, ldr_id: String): void
+    {
+        _ldrs.push(ldr);
+	_offsets[ldr_id] = 0;
+    }
+
+    public function is_demux_exists(): Boolean
+    {
+        return !!_demux;
+    }
+
+    public function create_demux(probe: ByteArray): void
+    {
+        _demux = DemuxHelper.probe(probe, _levels[_ldrs[0].frag.level], _demuxAudioSelectionHandler, _demuxProgressHandler, _demuxCompleteHandler, _demuxErrorHandler, _demuxVideoMetadataHandler, _demuxID3TagHandler, false);
+	_demux_offset = 0;
+	_fragData = new FragmentData();
+    }
+
+    private function _demuxErrorHandler(error : String) : void
+    {
+        // abort any load in progress
+        if (_onerror != null)
+	    _onerror();
+        // then try to overcome parsing error
+        _handleParsingError(error, _ldrs, _fragData);
+    }
+
+    /** triggered when demux has completed fragment parsing **/
+    private function _demuxCompleteHandler() : void
+    {
+        var frag: Fragment = _ldrs[0].frag;
+        var metrics: HLSLoadMetrics = new HLSLoadMetrics(HLSLoaderTypes.FRAGMENT_MAIN);
+        metrics.level = frag.level;
+        metrics.id = frag.seqnum;
+        var hlsError : HLSError;
+        if ((_demux.audioExpected && !_fragData.audio_found) && (_demux.videoExpected && !_fragData.video_found)) {
+            // handle it like a parsing error
+            _handleParsingError("error parsing fragment, no tag found", _ldrs, _fragData);
+            return;
+        }
+        // Calculate bandwidth
+	metrics.loading_request_time = getTimer();
+	for each (var ldr: FragLoaderInfo in _ldrs)
+	{
+	    if (ldr.metrics.loading_request_time < metrics.loading_request_time)
+	        metrics.loading_request_time = ldr.metrics.loading_request_time;
+	}
+        metrics.parsing_end_time = getTimer();
+        try {
+            var fragLevel : Level = _levels[frag.level];
+            if (_fragData.audio_found || _fragData.video_found)
+	    {
+                fragLevel.updateFragment(frag.seqnum, true, _fragData.pts_min, _fragData.pts_max + _fragData.tag_duration);
+                // set pts_start here, it might not be updated directly in updateFragment() if this loaded fragment has been removed from a live playlist
+                _fragData.pts_start = _fragData.pts_min;
+                _hls.dispatchEvent(new HLSEvent(HLSEvent.PLAYLIST_DURATION_UPDATED, fragLevel.duration));
+                if (_fragData.tags.length)
+		{
+                    if (_fragData.metadata_tag_injected == false)
+		    {
+                        _fragData.tags.unshift(frag.getMetadataTag());
+                        _fragData.metadata_tag_injected = true;
+                    }
+                    _streamBuffer.appendTags(HLSLoaderTypes.FRAGMENT_MAIN, frag.level, frag.seqnum, _fragData.tags, _fragData.tag_pts_min, _fragData.tag_pts_max + _fragData.tag_duration, frag.continuity, frag.start_time + _fragData.tag_pts_start_offset / 1000);
+                    metrics.duration = _fragData.pts_max + _fragData.tag_duration - _fragData.pts_min;
+                    metrics.id2 = _fragData.tags.length;
+                    _hls.dispatchEvent(new HLSEvent(HLSEvent.TAGS_LOADED, metrics));
+                    _fragData.shiftTags();
+                }
+            } else
+                metrics.duration = frag.duration * 1000;
+            _hls.dispatchEvent(new HLSEvent(HLSEvent.FRAGMENT_LOADED, metrics));
+        } catch (error : Error) {
+            hlsError = new HLSError(HLSError.OTHER_ERROR, frag.url, error.message);
+            _hls.dispatchEvent(new HLSEvent(HLSEvent.ERROR, hlsError));
+        }
+        ExternalInterface.call('console.log', 'XXX frag completed: [level '+frag.level+'] frag '+frag.seqnum);
+	if (_oncomplete != null)
+	    _oncomplete(_ldrs);
+    }
+
+    /** triggered by demux, it should return the audio track to be parsed */
+    private function _demuxAudioSelectionHandler(audioTrackList : Vector.<AudioTrack>) : AudioTrack
+    {
+        return _audioTrackController.audioTrackSelectionHandler(audioTrackList);
+    }
+
+    private function _demuxID3TagHandler(id3_tags : Vector.<ID3Tag>) : void
+    {
+        _fragData.id3_tags = id3_tags;
+    }
+
+    /** triggered when demux has retrieved some tags from fragment **/
+    private function _demuxProgressHandler(tags : Vector.<FLVTag>) : void
+    {
+        _fragData.appendTags(tags);
+    }
+
+    /** triggered by demux, it should return video width/height */
+    private function _demuxVideoMetadataHandler(width : uint, height : uint) : void
+    {
+        if (_fragData.video_width == 0)
+	{
+            _fragData.video_width = width;
+            _fragData.video_height = height;
+        }
+    }
+
+    public function append(data: ByteArray, ldr_id: String): void
+    {
+        if (!_demux)
+	    return;
+	var old_offset: Number = _offsets[ldr_id];
+        var ldr_offset: Number = (_offsets[ldr_id] += data.length);
+        if (ldr_offset > _demux_offset)
+	{
+	    if (ldr_offset - _demux_offset == data.length)
+                _demux.append(data);
+	    else
+	    {
+	        var ba: ByteArray = new ByteArray();
+		ba.writeBytes(data, _demux_offset - old_offset, ldr_offset - _demux_offset);
+		_demux.append(ba);
+	    }
+	    _demux_offset = ldr_offset;
+	}
+    }
+
+    public function complete(): void
+    {
+       _demux.notifycomplete();
+    }
+
+    public function get audioExpected() : Boolean
+    {
+        return _demux ? _demux.audioExpected : true;
+    }
+
+    public function get videoExpected() : Boolean
+    {
+        return _demux ? _demux.videoExpected : true;
+    }
+}
+

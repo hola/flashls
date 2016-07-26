@@ -81,7 +81,6 @@ package org.mangui.hls.demux {
         private var _audioOnly : Boolean;
         private var _audioFound : Boolean;
         private var _audioSelected : Boolean;
-	private var _context: *;
 
         public static function probe(data : ByteArray) : Boolean {
             var pos : uint = data.position;
@@ -103,11 +102,6 @@ package org.mangui.hls.demux {
             data.position = pos;
             return false;
         }
-
-        public function set context(ctx: *): void
-	{
-	    _context = ctx;
-	}
 
         /** Transmux the M2TS file into an FLV file. **/
         public function TSDemuxer(callback_audioselect : Function,
@@ -315,10 +309,7 @@ package org.mangui.hls.demux {
             var start_time : int = getTimer();
             // if any tags left,
             if (_tags.length) {
-	        if (_context)
-                    _callback_progress(_tags, _context);
-		else
-		    _callback_progress(_tags);
+		_callback_progress(_tags);
                 _tags = new Vector.<FLVTag>();
             }
             /** Byte data to be read **/
@@ -335,10 +326,7 @@ package org.mangui.hls.demux {
             // if we have spare time
             if((getTimer() - start_time) < 10) {
                 if (_tags.length) {
-		    if (_context)
-                        _callback_progress(_tags, _context);
-	            else
-		        _callback_progress(_tags);
+		    _callback_progress(_tags);
                     _tags = new Vector.<FLVTag>();
                 }
                 // if we have spare time
@@ -355,10 +343,7 @@ package org.mangui.hls.demux {
                         }
                         _timer.stop();
                         _flush();
-			if (_context)
-                            _callback_complete(_context);
-			else
-			    _callback_complete();
+			_callback_complete();
                     }
                 }
             }
@@ -441,10 +426,7 @@ package org.mangui.hls.demux {
                 CONFIG::LOGGING {
                     Log.debug2("TS: flush " + _tags.length + " tags");
                 }
-		if (_context)
-                    _callback_progress(_tags, _context);
-		else
-		    _callback_progress(_tags);
+		_callback_progress(_tags);
                 _tags = new Vector.<FLVTag>();
             }
             if(_avcId !=-1 && _videoPESfound == false) {
@@ -618,10 +600,7 @@ package org.mangui.hls.demux {
                     sps.position = 0;
                     if (spsInfo.width && spsInfo.height) {
                         // notify upper layer
-			if (_context)
-                            _callback_videometadata(spsInfo.width, spsInfo.height, _context);
-			else
-			    _callback_videometadata(spsInfo.width, spsInfo.height);
+			_callback_videometadata(spsInfo.width, spsInfo.height);
                     }
                 } else if (frame.type == 8) {
                     if (!pps_found) {
@@ -668,10 +647,7 @@ package org.mangui.hls.demux {
                 } else if (frame.type == 0) {
                     // report parsing error
                     if(_callback_error != null) {
-		        if (_context)
-                            _callback_error("TS: invalid NALu type found, corrupted fragment ?", _context);
-			else
-			    _callback_error("TS: invalid NALu type found, corrupted fragment ?");
+			_callback_error("TS: invalid NALu type found, corrupted fragment ?");
                         return;
                     }
                 }
@@ -817,10 +793,7 @@ package org.mangui.hls.demux {
                     data.position = pos_end + 1;
                 } else {
                     if(_callback_error != null) {
-		        if (_context)
-                            _callback_error("TS: Could not parse file: sync byte not found @ offset/len " + data.position + "/" + data.length, _context);
-			else
-			    _callback_error("TS: Could not parse file: sync byte not found @ offset/len " + data.position + "/" + data.length);
+			_callback_error("TS: Could not parse file: sync byte not found @ offset/len " + data.position + "/" + data.length);
                         return;
                     }
                 }
@@ -1082,10 +1055,7 @@ package org.mangui.hls.demux {
                 }
                 _audioFound = audioFound;
                 var audioTrack : AudioTrack;
-		if (_context)
-		    audioTrack = _callback_audioselect(audioList, _context);
-		else
-		    audioTrack = _callback_audioselect(audioList);
+		audioTrack = _callback_audioselect(audioList);
                 if (audioTrack) {
                     audioPID = audioTrack.id;
                     _audioIsAAC = audioTrack.isAAC;

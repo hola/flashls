@@ -14,7 +14,5 @@
         function  get audioExpected() : Boolean;
 
         function  get videoExpected() : Boolean;
-
-	function set context(ctx: *): void;
     }
 }
