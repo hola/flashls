@@ -328,7 +328,7 @@ package org.mangui.hls.loader {
             if (fragData.bytes == null) {
                 fragData.bytes = new ByteArray();
                 fragData.bytesLoaded = 0;
-                fragData.flushTags();
+		fragData.flushTags();
                 ldr.metrics.loading_begin_time = getTimer();
 
                 // decrypt data if needed
@@ -668,6 +668,7 @@ class FragScheduler
         _demux = DemuxHelper.probe(probe, _levels[_ldrs[0].frag.level], _demuxAudioSelectionHandler, _demuxProgressHandler, _demuxCompleteHandler, _demuxErrorHandler, _demuxVideoMetadataHandler, _demuxID3TagHandler, false);
 	_demux_offset = 0;
 	_fragData = new FragmentData();
+	_fragData.flushTags();
     }
 
     private function _demuxErrorHandler(error : String) : void
@@ -682,6 +683,7 @@ class FragScheduler
     /** triggered when demux has completed fragment parsing **/
     private function _demuxCompleteHandler() : void
     {
+        ExternalInterface.call('console.log', 'XXX demuxing complete ['+_ldrs[0].frag.level+' / '+_ldrs[0].frag.seqnum+']');
         var frag: Fragment = _ldrs[0].frag;
         var metrics: HLSLoadMetrics = new HLSLoadMetrics(HLSLoaderTypes.FRAGMENT_MAIN);
         metrics.level = frag.level;
@@ -769,12 +771,16 @@ class FragScheduler
         if (ldr_offset > _demux_offset)
 	{
 	    if (ldr_offset - _demux_offset == data.length)
+	    {
                 _demux.append(data);
+		// ExternalInterface.call('console.log', 'XXX fast append data to demuxer ['+_ldrs[0].frag.level+' / '+_ldrs[0].frag.seqnum+'] offset '+_demux_offset+', length '+data.length);
+	    }
 	    else
 	    {
 	        var ba: ByteArray = new ByteArray();
 		ba.writeBytes(data, _demux_offset - old_offset, ldr_offset - _demux_offset);
 		_demux.append(ba);
+		// ExternalInterface.call('console.log', 'XXX slow append data to demuxer ['+_ldrs[0].frag.level+' / '+_ldrs[0].frag.seqnum+'] offset '+_demux_offset+', length '+(ldr_offset - _demux_offset));
 	    }
 	    _demux_offset = ldr_offset;
 	}
