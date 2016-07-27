@@ -148,7 +148,7 @@ package org.mangui.hls
 
 	private static function on_seek_state(e: HLSEvent): void
 	{
-            JSAPI.postMessage('flashls.'+e.type, {state: e.state, seek_pos: _hls.position});
+            JSAPI.postMessage('flashls.'+e.type, {state: e.state, seek_pos: _hls.position, buffer: _hls.stream.bufferLength});
 	}
 
         private static function on_event(e:HLSEvent):void{

@@ -732,6 +732,7 @@ class FragScheduler
             var fragLevel : Level = _levels[frag.level];
             if (_fragData.audio_found || _fragData.video_found)
 	    {
+	        frag.data = _fragData;
                 fragLevel.updateFragment(frag.seqnum, true, _fragData.pts_min, _fragData.pts_max + _fragData.tag_duration);
                 // set pts_start here, it might not be updated directly in updateFragment() if this loaded fragment has been removed from a live playlist
                 _fragData.pts_start = _fragData.pts_min;
