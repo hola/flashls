@@ -71,6 +71,7 @@ package org.mangui.hls
             hls.addEventListener(HLSEvent.MANIFEST_LOADING,
 	        on_manifest_loading);
             hls.addEventListener(HLSEvent.PLAYBACK_STATE, on_playback_state);
+            hls.addEventListener(HLSEvent.SEEK_STATE, on_seek_state);
             // notify js events
             hls.addEventListener(HLSEvent.MANIFEST_LOADING, on_event);
             hls.addEventListener(HLSEvent.MANIFEST_PARSED, on_event);
@@ -96,7 +97,6 @@ package org.mangui.hls
             hls.addEventListener(HLSEvent.ERROR, on_event);
             hls.addEventListener(HLSEvent.MEDIA_TIME, on_event);
             hls.addEventListener(HLSEvent.PLAYBACK_STATE, on_event);
-            hls.addEventListener(HLSEvent.SEEK_STATE, on_event);
             hls.addEventListener(HLSEvent.STREAM_TYPE_DID_CHANGE, on_event);
             hls.addEventListener(HLSEvent.PLAYBACK_COMPLETE, on_event);
             hls.addEventListener(HLSEvent.PLAYLIST_DURATION_UPDATED,
@@ -144,6 +144,11 @@ package org.mangui.hls
 	private static function on_level_loaded(e: HLSEvent): void
 	{
             JSAPI.postMessage('flashls.'+e.type, {level: level_to_object(_hls.levels[e.loadMetrics.level])});
+	}
+
+	private static function on_seek_state(e: HLSEvent): void
+	{
+            JSAPI.postMessage('flashls.'+e.type, {state: e.state, seek_pos: _hls.position});
 	}
 
         private static function on_event(e:HLSEvent):void{
