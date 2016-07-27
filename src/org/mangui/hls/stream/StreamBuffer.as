@@ -29,6 +29,8 @@ package org.mangui.hls.stream {
 
     import org.hola.HSettings;
 
+    import flash.external.ExternalInterface;
+
     CONFIG::LOGGING {
         import org.mangui.hls.utils.Log;
     }
@@ -157,6 +159,7 @@ package org.mangui.hls.stream {
          * if seek position out of buffer, ask fragment loader to retrieve data
          */
         public function seek(position : Number) : void {
+	    ExternalInterface.call('console.log', 'XXX StreamBuffer.seek()');
             var loadLevel : Level;
             // cap max position if known playlist duration
             var maxPosition : Number = Number.POSITIVE_INFINITY;
@@ -181,7 +184,7 @@ package org.mangui.hls.stream {
             CONFIG::LOGGING {
                 Log.debug("seek : requested position:" + position.toFixed(2) + ",seek position:" + _seekPositionRequested.toFixed(2) + ",min/max buffer position:" + min_pos.toFixed(2) + "/" + max_pos.toFixed(2));
             }
-            // check if we can seek in buffer
+            // check if we can seek in buffer+
             if (_seekPositionRequested >= min_pos && _seekPositionRequested <= max_pos) {
                 _seekPositionReached = false;
                 _audioIdx = _videoIdx = _metaIdx = _headerIdx = 0;

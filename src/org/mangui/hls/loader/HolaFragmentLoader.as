@@ -48,8 +48,6 @@ package org.mangui.hls.loader {
         private var _keystreamloader : URLStream;
         /** key map **/
         private var _keymap : Object;
-        /** requested seek position **/
-        private var _seekPosition : Number;
         /* stream buffer instance **/
         private var _streamBuffer : StreamBuffer;
         /* key error/reload */
@@ -81,6 +79,16 @@ package org.mangui.hls.loader {
 	        ldr.loader.close();
 	    if (_loaders[ldr.loader.req_id])
 	        delete _loaders[ldr.loader.req_id];
+            var scheduler: FragScheduler = sch_from_ldr(ldr);
+            if (scheduler)
+	    {
+	        scheduler.rm_ldr(ldr);
+		if (scheduler.is_empty())
+		{
+		    scheduler.stop();
+		    delete _schedulers[ldr.frag.level + '/' + ldr.frag.seqnum];
+		}
+	    }
 	}
 
         /** Create the loader. **/
@@ -140,7 +148,6 @@ package org.mangui.hls.loader {
 	       ldr.retryTimeout = 1000;
 	       ldr.retryCount = 0;
 	    }
-            _seekPosition = position;
             _fragSkipCount = 0;
         }
 
@@ -438,14 +445,6 @@ package org.mangui.hls.loader {
 	    {
 	        if (ldr.loader.connected)
 	            ldr.loader.close();
-	    }
-            if (_keystreamloader && _keystreamloader.connected) {
-                _keystreamloader.close();
-            }
-            for each (var sch: FragScheduler in _schedulers)
-	        sch.stop();
-	    for each (ldr in _loaders)
-	    {
 	        if (ldr.frag)
 		{
                     var fragData : FragmentData = ldr.frag.data;
@@ -456,7 +455,14 @@ package org.mangui.hls.loader {
                     fragData.bytes = null;
 		}
 	    }
+            if (_keystreamloader && _keystreamloader.connected) {
+                _keystreamloader.close();
+            }
+            for each (var sch: FragScheduler in _schedulers)
+	        sch.stop();
 	    _loaders = {};
+	    _schedulers = {};
+	    ExternalInterface.call('console.log', 'XXX fragment loader reset');
         }
 
         /** Catch IO and security errors. **/
@@ -492,7 +498,8 @@ package org.mangui.hls.loader {
 	public function abortFragment(ldr_id: String): void
 	{
 	    ExternalInterface.call('console.log', 'XXX frag abort, ldr_id = '+ldr_id);
-	    _stop_load();
+	    if (_loaders[ldr_id])
+	        free_ldr(_loaders[ldr_id]);
 	}
 
         public function loadFragment(level: Number, frag: Number, url: String): Object
@@ -649,13 +656,32 @@ class FragScheduler
 
     public function stop(): void
     {
-        _demux.cancel();
+        if (_demux)
+            _demux.cancel();
     }
 
     public function add_ldr(ldr: FragLoaderInfo, ldr_id: String): void
     {
         _ldrs.push(ldr);
 	_offsets[ldr_id] = 0;
+    }
+
+    public function is_empty(): Boolean
+    {
+        return !!_ldrs.length;
+    }
+
+    public function rm_ldr(ldr: FragLoaderInfo): void
+    {
+        delete _offsets[ldr.loader.req_id];
+	for (var i: Number = 0, len: Number = _ldrs.length; i < len; i++)
+	{
+	    if (_ldrs[i]===ldr)
+	    {
+	        _ldrs.splice(i, 1);
+		break;
+	    }
+	}
     }
 
     public function is_demux_exists(): Boolean
