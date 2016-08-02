@@ -42,6 +42,7 @@ package org.mangui.hls.loader {
         private var _levelController : LevelController;
         /** reference to audio track controller */
         private var _audioTrackController : AudioTrackController;
+	private var _discTracker: DiscontinuityTracker;
         /** Reference to the manifest levels. **/
         private var _levels : Vector.<Level>;
         /** Util for loading the key. **/
@@ -97,6 +98,7 @@ package org.mangui.hls.loader {
             _levelController = levelController;
             _audioTrackController = audioTrackController;
             _streamBuffer = streamBuffer;
+	    _discTracker = new DiscontinuityTracker();
             _hls.addEventListener(HLSEvent.MANIFEST_LOADED, _manifestLoadedHandler);
             _keymap = new Object();
             _levels = hls.levels;
@@ -542,7 +544,7 @@ package org.mangui.hls.loader {
 	    var scheduler: FragScheduler = _schedulers[frag.level+'/'+frag.seqnum];
 	    if (!scheduler)
 	    {
-	        scheduler = _schedulers[frag.level+'/'+frag.seqnum] = new FragScheduler(_audioTrackController, _hls, _levels, _streamBuffer, _schedulerComplete, _schedulerError,
+	        scheduler = _schedulers[frag.level+'/'+frag.seqnum] = new FragScheduler(_audioTrackController, _hls, _levels, _streamBuffer, _discTracker, _schedulerComplete, _schedulerError,
 		    _handleParsingError);
     	    }
             scheduler.add_ldr(ldr, ldr_id);
@@ -640,9 +642,10 @@ class FragScheduler
     private var _hls: HLS;
     private var _levels: Vector.<Level>;
     private var _streamBuffer: StreamBuffer;
+    private var _discTracker: DiscontinuityTracker;
     private var _handleParsingError: Function;
 
-    public function FragScheduler(audioTrackController: AudioTrackController, hls: HLS, levels: Vector.<Level>, streamBuffer: StreamBuffer, oncomplete: Function, onerror: Function,
+    public function FragScheduler(audioTrackController: AudioTrackController, hls: HLS, levels: Vector.<Level>, streamBuffer: StreamBuffer, discTracker: DiscontinuityTracker, oncomplete: Function, onerror: Function,
         handleParsingError: Function)
     {
         _audioTrackController = audioTrackController;
@@ -651,6 +654,7 @@ class FragScheduler
 	_onerror = onerror;
 	_levels = levels;
 	_streamBuffer = streamBuffer;
+	_discTracker = discTracker;
 	_handleParsingError = handleParsingError;
     }
 
@@ -715,6 +719,7 @@ class FragScheduler
         metrics.level = frag.level;
         metrics.id = frag.seqnum;
         var hlsError : HLSError;
+	_discTracker.fragmentContinuity = frag.continuity;
         if ((_demux.audioExpected && !_fragData.audio_found) && (_demux.videoExpected && !_fragData.video_found)) {
             // handle it like a parsing error
             _handleParsingError("error parsing fragment, no tag found", _ldrs, _fragData);
@@ -742,13 +747,17 @@ class FragScheduler
                     if (_fragData.metadata_tag_injected == false)
 		    {
                         _fragData.tags.unshift(frag.getMetadataTag());
+                        if (_discTracker.discontinuity)
+                            _fragData.tags.unshift(new FLVTag(FLVTag.DISCONTINUITY, _fragData.dts_min, _fragData.dts_min, false));
                         _fragData.metadata_tag_injected = true;
                     }
+		    ExternalInterface.call('console.log', 'XXX '+_fragData.tags.length+' tags fed to streamBuffer, start_time = '+frag.start_time);
                     _streamBuffer.appendTags(HLSLoaderTypes.FRAGMENT_MAIN, frag.level, frag.seqnum, _fragData.tags, _fragData.tag_pts_min, _fragData.tag_pts_max + _fragData.tag_duration, frag.continuity, frag.start_time + _fragData.tag_pts_start_offset / 1000);
                     metrics.duration = _fragData.pts_max + _fragData.tag_duration - _fragData.pts_min;
                     metrics.id2 = _fragData.tags.length;
                     _hls.dispatchEvent(new HLSEvent(HLSEvent.TAGS_LOADED, metrics));
                     _fragData.shiftTags();
+		    _discTracker.discontinuity = false;
                 }
             } else
                 metrics.duration = frag.duration * 1000;
@@ -826,6 +835,29 @@ class FragScheduler
     public function get videoExpected() : Boolean
     {
         return _demux ? _demux.videoExpected : true;
+    }
+}
+
+class DiscontinuityTracker
+{
+    private var _disc: Boolean = true;
+    private var _fragCont: Number = -1;
+
+    public function get discontinuity(): Boolean
+    {
+        return _disc;
+    }
+
+    public function set fragmentContinuity(fragCont: Number): void
+    {
+        if (_fragCont !== -1)
+            _disc = fragCont != _fragCont;
+	_fragCont = fragCont;
+    }
+
+    public function set discontinuity(disc: Boolean): void
+    {
+        _disc = disc;
     }
 }
 
