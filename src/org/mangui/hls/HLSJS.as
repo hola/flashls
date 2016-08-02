@@ -180,7 +180,6 @@ package org.mangui.hls
             return _duration;
         }
 
-
         private static function hola_hls_get_decoded_frames(): Number
 	{
             return _hls.stream.decodedFrames;
@@ -207,6 +206,8 @@ package org.mangui.hls
 
 	private static function hola_hls_flush_stream(): void
 	{
+	    if (_hls.stream.decodedFrames === 0)
+	        return;
 	    _silence = true;
 	    _hls.stream.close();
 	    _hls.stream.play();
@@ -225,6 +226,8 @@ package org.mangui.hls
 	{
 	    if (HSettings.gets('mode')!='hola_adaptive')
 	        return;
+	    if (!_hls.isStartLevelSet())
+	        _hls.startLevel = level;
 	    _hls.dispatchEvent(new HLSEvent(HLSEvent.LEVEL_SWITCH, level));
         }
 

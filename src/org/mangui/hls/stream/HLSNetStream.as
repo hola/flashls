@@ -250,7 +250,7 @@ package org.mangui.hls.stream {
 	               // Ignore errors, we're running in FP < 11.1
                 }
 
-                super.play(null);
+		super.play(null);
                 super.appendBytesAction(NetStreamAppendBytesAction.RESET_SEEK);
                 // immediatly pause NetStream, it will be resumed when enough data will be buffered in the NetStream
                 super.pause();

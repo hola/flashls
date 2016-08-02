@@ -91,6 +91,11 @@ package org.mangui.hls {
 	    _streamBuffer.abortFragment(ldr_id);
 	}
 
+	public function isStartLevelSet(): Boolean
+	{
+	    return _levelController.isStartLevelSet();
+	}
+
         private function _levelSwitchHandler(event : HLSEvent) : void {
             _level = event.level;
         };

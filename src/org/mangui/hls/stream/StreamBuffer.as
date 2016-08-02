@@ -89,7 +89,6 @@ package org.mangui.hls.stream {
         private var _overlappingStartPosition : Number;
         private var _overlappingMinPTS : Number;
 
-
         public function StreamBuffer(hls : HLS, audioTrackController : AudioTrackController, levelController : LevelController) {
             _hls = hls;
 	    _audioTrackController = audioTrackController;
