@@ -670,7 +670,8 @@ package org.mangui.hls.stream {
             }
             // dispatch media time event only if position/buffer or playlist duration has changed
             if(dispatchTimeUpdate && (pos != _lastPos || bufLen != _lastBufLen || duration != _lastDuration) ) {
-                _hls.dispatchEvent(new HLSEvent(HLSEvent.MEDIA_TIME, new HLSMediatime(pos, duration, bufLen, backBufferLength, _liveSlidingMain, _liveSlidingAltAudio,watched)));
+	         var obtained: Number = _fragmentLoader is HolaFragmentLoader ? (_fragmentLoader as HolaFragmentLoader).obtainedSec : 0;
+                _hls.dispatchEvent(new HLSEvent(HLSEvent.MEDIA_TIME, new HLSMediatime(pos, duration, bufLen, backBufferLength, _liveSlidingMain, _liveSlidingAltAudio, watched, obtained)));
                 _lastPos = pos;
                 _lastDuration = duration;
                 _lastBufLen = bufLen;

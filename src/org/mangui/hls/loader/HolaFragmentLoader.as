@@ -504,6 +504,12 @@ package org.mangui.hls.loader {
 	        free_ldr(_loaders[ldr_id]);
 	}
 
+        public function get obtainedSec(): Number
+	{
+	    var scheduler: FragScheduler = get_current_scheduler();
+	    return scheduler ? scheduler.obtainedSec : 0;
+	}
+
         public function loadFragment(level: Number, frag: Number, url: String): Object
 	{
   	    var levelObj: Level = _levels[level];
@@ -672,7 +678,7 @@ class FragScheduler
 
     public function is_empty(): Boolean
     {
-        return !!_ldrs.length;
+        return !_ldrs.length;
     }
 
     public function rm_ldr(ldr: FragLoaderInfo): void
@@ -686,6 +692,11 @@ class FragScheduler
 		break;
 	    }
 	}
+    }
+
+    public function get obtainedSec(): Number
+    {
+        return (_fragData.pts_min == Number.POSITIVE_INFINITY || _fragData.pts_max == Number.NEGATIVE_INFINITY) ? 0 : (_fragData.pts_max + _fragData.tag_duration - _fragData.pts_min) / 1000;
     }
 
     public function is_demux_exists(): Boolean
@@ -713,7 +724,6 @@ class FragScheduler
     /** triggered when demux has completed fragment parsing **/
     private function _demuxCompleteHandler() : void
     {
-        ExternalInterface.call('console.log', 'XXX demuxing complete ['+_ldrs[0].frag.level+' lvl / '+_ldrs[0].frag.seqnum+' sn]');
         var frag: Fragment = _ldrs[0].frag;
         var metrics: HLSLoadMetrics = new HLSLoadMetrics(HLSLoaderTypes.FRAGMENT_MAIN);
         metrics.level = frag.level;
@@ -751,7 +761,6 @@ class FragScheduler
                             _fragData.tags.unshift(new FLVTag(FLVTag.DISCONTINUITY, _fragData.dts_min, _fragData.dts_min, false));
                         _fragData.metadata_tag_injected = true;
                     }
-		    ExternalInterface.call('console.log', 'XXX '+_fragData.tags.length+' tags fed to streamBuffer, start_time = '+frag.start_time);
                     _streamBuffer.appendTags(HLSLoaderTypes.FRAGMENT_MAIN, frag.level, frag.seqnum, _fragData.tags, _fragData.tag_pts_min, _fragData.tag_pts_max + _fragData.tag_duration, frag.continuity, frag.start_time + _fragData.tag_pts_start_offset / 1000);
                     metrics.duration = _fragData.pts_max + _fragData.tag_duration - _fragData.pts_min;
                     metrics.id2 = _fragData.tags.length;
