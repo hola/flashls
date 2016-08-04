@@ -27,6 +27,7 @@ package org.mangui.hls
             _inited = true;
             JSAPI.init();
             ExternalInterface.addCallback("hola_version", hola_version);
+            ExternalInterface.addCallback("hola_hls_version", hola_version);
             ExternalInterface.addCallback("hola_hls_get_video_url",
                 hola_hls_get_video_url);
             ExternalInterface.addCallback("hola_hls_get_position",
@@ -50,6 +51,8 @@ package org.mangui.hls
 	    ExternalInterface.addCallback("hola_hls_get_decoded_frames",
 	        hola_hls_get_decoded_frames);
             ExternalInterface.addCallback("hola_setBandwidth",
+                hola_setBandwidth);
+            ExternalInterface.addCallback("hola_hls_setBandwidth",
                 hola_setBandwidth);
             ExternalInterface.addCallback("hola_hls_get_type",
                 hola_hls_get_type);
