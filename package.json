@@ -1,0 +1,11 @@
+{
+  "name": "flashls",
+  "version": "0.4.2.1",
+  "description": "An Open-source HLS Flash plugin that allows you to play HLS stream",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hola/flashls.git"
+  },
+  "author": "",
+  "license": "MPL-2.0"
+}
