@@ -1,6 +1,6 @@
 #!/bin/bash
 if [ -z "$FLEXPATH" ]; then
-  FLEXPATH=sdks/apache-flex-sdk-4.14.1-bin
+  FLEXPATH=/usr/local/ztools/flex_sdk/flex_sdk-4.14.1-2
 fi
 
 cd $(dirname $(realpath $0))
