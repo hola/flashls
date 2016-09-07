@@ -10,7 +10,7 @@
     import flash.net.URLStream;
     import flash.events.EventDispatcher;
     import flash.events.Event;
-    import flash.utils.setTimeout;    
+    import flash.utils.setTimeout;
 
     import org.mangui.hls.model.Level;
     import org.mangui.hls.model.Fragment;
@@ -40,6 +40,7 @@
         private var _client : Object = {};
         private var _stage : Stage;
         private var _url:String;
+        private static var _currentFrag: String;
         private static var hola_api_inited:Boolean;
         private static var g_curr_id:Number = 0;
         private static var g_curr_hls:HLS;
@@ -48,7 +49,7 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.28'
+                patch_version: '1.0.29'
             };
         }
         private static function hola_hls_get_video_url() : String {
@@ -57,7 +58,7 @@
 
         private static function hola_hls_get_type():String{
             return g_curr_hls.type;
-        }	
+        }
 
         private static function hola_hls_get_position() : Number {
             return g_curr_hls.position;
@@ -80,7 +81,7 @@
         }
 
         private static function hola_hls_get_levels() : Object {
-	    var levels:Vector.<Object> = 
+	    var levels:Vector.<Object> =
 	        new Vector.<Object>(g_curr_hls.levels.length);
 	    for (var i:int = 0; i<g_curr_hls.levels.length; i++)
 	    {
@@ -128,11 +129,16 @@
         private static function hola_hls_get_decoded_frames(): Number
 	{
    	    return g_curr_hls.stream.decodedFrames;
-	}	
+	}
 
         private static function hola_hls_get_level(): String
 	{
             return g_curr_hls.level<g_curr_hls.levels.length ? g_curr_hls.levels[g_curr_hls.level].url : undefined;
+        }
+
+        private static function hola_hls_get_current_fragment(): String
+        {
+            return _currentFrag;
         }
 
         /** Create and connect all components. **/
@@ -149,6 +155,8 @@
   	        ExternalInterface.addCallback("hola_hls_get_decoded_frames", hola_hls_get_decoded_frames);
                 ExternalInterface.addCallback("hola_hls_get_video_url",
                     HLS.hola_hls_get_video_url);
+                ExternalInterface.addCallback("hola_hls_get_current_fragment",
+                    HLS.hola_hls_get_current_fragment);
                 ExternalInterface.addCallback("hola_hls_get_position",
                     HLS.hola_hls_get_position);
                 ExternalInterface.addCallback("hola_hls_get_duration",
@@ -186,6 +194,7 @@
             add_event(HLSEvent.LEVEL_SWITCH);
             add_event(HLSEvent.LEVEL_ENDLIST);
             add_event(HLSEvent.FRAGMENT_LOADING);
+            this.addEventListener(HLSEvent.FRAGMENT_LOADING, on_fragment_loading);
             add_event(HLSEvent.FRAGMENT_LOADED);
             add_event(HLSEvent.FRAGMENT_PLAYING);
             add_event(HLSEvent.AUDIO_TRACKS_LIST_CHANGE);
@@ -201,6 +210,11 @@
             add_event(HLSEvent.ID3_UPDATED);
         };
 
+        private function on_fragment_loading(e: HLSEvent): void
+        {
+            _currentFrag = e.url;
+        }
+
         private function on_event_loaded(e: HLSEvent): void
 	{
 	    JSAPI.postMessage('flashls.'+e.type, {level: level_to_object(g_curr_hls.levels[e.level])});
@@ -213,9 +227,9 @@
 	    {
 	        var fragment: Fragment = l.fragments[i];
 	        fragments.push({url: fragment.url, duration: fragment.duration, seqnum: fragment.seqnum});
-	    }	
+	    }
 	    return {url: l.url, bitrate: l.bitrate, fragments: fragments, index: l.index};
-	}	
+	}
 
         private function add_event(name:String):void{
             this.addEventListener(name, event_handler_func('flashls.'+name));
