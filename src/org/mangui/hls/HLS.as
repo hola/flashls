@@ -40,6 +40,7 @@
         private var _client : Object = {};
         private var _stage : Stage;
         private var _url:String;
+        private static var _state: String;
         private static var _currentFrag: String;
         private static var hola_api_inited:Boolean;
         private static var g_curr_id:Number = 0;
@@ -49,7 +50,7 @@
         {
             return {
                 flashls_version: '0.3.5',
-                patch_version: '1.0.29'
+                patch_version: '1.0.30'
             };
         }
         private static function hola_hls_get_video_url() : String {
@@ -77,7 +78,7 @@
         }
 
         private static function hola_hls_get_state() : String {
-            return g_curr_hls.playbackState;
+            return _state;
         }
 
         private static function hola_hls_get_levels() : Object {
@@ -185,8 +186,10 @@
             // default loader
             _fragmentLoader = new FragmentLoader(this, _audioTrackController);
             _hlsNetStream = new HLSNetStream(connection, this, _fragmentLoader);
+	    _state = 'IDLE';
             JSAPI.postMessage('flashls.hlsNew');
             add_event(HLSEvent.MANIFEST_LOADING);
+            this.addEventListener(HLSEvent.MANIFEST_LOADING, on_manifest_loading);
             add_event(HLSEvent.MANIFEST_PARSED);
             add_event(HLSEvent.MANIFEST_LOADED);
             add_event(HLSEvent.LEVEL_LOADING);
@@ -204,15 +207,26 @@
             add_event(HLSEvent.ERROR);
             add_event(HLSEvent.MEDIA_TIME);
             add_event(HLSEvent.PLAYBACK_STATE);
+            this.addEventListener(HLSEvent.PLAYBACK_STATE, on_playback_state);
             add_event(HLSEvent.SEEK_STATE);
             add_event(HLSEvent.PLAYBACK_COMPLETE);
             add_event(HLSEvent.PLAYLIST_DURATION_UPDATED);
             add_event(HLSEvent.ID3_UPDATED);
         };
 
+        private function on_manifest_loading(e: HLSEvent): void
+        {
+            _state = 'LOADING';
+        }
+
         private function on_fragment_loading(e: HLSEvent): void
         {
             _currentFrag = e.url;
+        }
+
+        private function on_playback_state(e: HLSEvent): void
+        {
+            _state = e.state;
         }
 
         private function on_event_loaded(e: HLSEvent): void
@@ -266,6 +280,7 @@
             _hlsNetStream = null;
             _client = null;
             _stage = null;
+	    _state = 'IDLE';
             _hlsNetStream = null;
         }
 
