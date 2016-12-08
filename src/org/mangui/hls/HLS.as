@@ -281,7 +281,6 @@
             _client = null;
             _stage = null;
 	    _state = 'IDLE';
-            _hlsNetStream = null;
         }
 
         /** Return the quality level used when starting a fresh playback **/
