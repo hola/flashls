@@ -176,7 +176,7 @@ package org.mangui.hls
         {
             return {
                 flashls_version: '0.4.4.20',
-                patch_version: '2.0.14'
+                patch_version: '2.0.15'
             };
         }
 
