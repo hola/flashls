@@ -270,7 +270,8 @@ package org.mangui.hls
                 var l: Level = _hls.levels[i];
                 // no fragments returned, use get_segment_info for fragm.info
                 levels[i] = Object({url: l.url, bitrate: l.bitrate,
-                    index: l.index, fragments: []});
+                    index: l.index, fragments: [], width: l.width,
+                    height: l.height});
             }
             return levels;
         }
